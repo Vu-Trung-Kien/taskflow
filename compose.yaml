@@ -43,7 +43,7 @@ services:
       - "127.0.0.1:1025:1025" # SMTP
       - "127.0.0.1:8025:8025" # giao diện web
 
-  # S3 giả lập cho local (xem ADR-0003). Không dùng cho production.
+  # S3 giả lập dùng riêng cho môi trường local.
   seaweedfs:
     image: chrislusf/seaweedfs@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d # ghim bản đã kéo ngày 2026-10-15
     restart: unless-stopped
