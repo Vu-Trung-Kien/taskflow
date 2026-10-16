@@ -12,14 +12,14 @@
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 - CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
 - Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image. CD run 38869916866 ban đầu dừng ở Trivy migrator (16 HIGH ở Node packages, 3 HIGH ở Go binary); sau khi tối giản image, build, migration trên PostgreSQL dùng một lần và Trivy local đạt, PR #12 cùng CI trên `main` đều đạt. CD run 38871872686 sau đó dừng ở AWS `AssumeRoleWithWebIdentity`; không push image hay gửi SSM command.
-- Sau khi người dùng làm mới profile MFA, AWS CLI xác minh ba parameter production tồn tại với loại `SecureString`, EC2 `running` và Systems Manager `Online`; không đọc giá trị parameter. Trust policy có provider/audience đúng nhưng dùng subject cũ. GitHub xác nhận repository thuộc rollout immutable OIDC subject sau 15/07/2026. Terraform đã được cập nhật để giới hạn subject theo owner ID, repository ID và nhánh `main`; plan đã review chỉ có 1 thay đổi tại role release, 0 thêm/0 xóa. Cần merge PR và apply thay đổi trust trước khi retry CD. Chưa có triển khai ứng dụng.
+- Sau khi người dùng làm mới profile MFA, AWS CLI xác minh ba parameter production tồn tại với loại `SecureString`, EC2 `running` và Systems Manager `Online`; không đọc giá trị parameter. Trust policy cũ có provider/audience đúng nhưng không khớp immutable OIDC subject. PR #13 đã merge và thay đổi trust đã apply thành công (0 tạo, 1 cập nhật, 0 xóa). CI main run 38873716817 đạt; CD run 38873976002 assume role, scan và push hai image thành công nhưng SSM dừng với exit 127 vì archive đặt script ở sai đường dẫn. Script deploy không chạy; chưa có migration/container production.
 - Đã viết Terraform bootstrap cho state và nền tảng AWS; PR #8 đã merge vào `main`; kiểm tra định dạng/xác thực local cùng CI `test`, `e2e`, `image` đều đạt. Đã apply Terraform foundation và xác minh các tài nguyên AWS; ứng dụng chưa được triển khai lên EC2.
 
 ## Chưa triển khai
 
 - Frontend và các API nghiệp vụ.
 - Triển khai ứng dụng lên EC2 và xác minh `/health/ready`, `/version`.
-- Xác minh workflow CD chạy xanh sau khi sửa Trivy gate và triển khai ứng dụng/migration lên EC2. Người dùng xác nhận đã cấu hình GitHub variables và SSM parameters; chưa thể xác minh metadata SSM/EC2 bằng AWS CLI tại máy làm việc vì phiên AWS đủ quyền chưa khả dụng.
+- Sửa đường dẫn script trong gói SSM, chạy lại CD và xác minh ứng dụng/migration trên EC2. Các GitHub variables, Parameter Store SecureString metadata, EC2 `running` và SSM `Online` đã được kiểm tra; không truy xuất secret value.
 - Thiết lập backup/restore và monitoring.
 - Chưa xác minh backend trên EC2.
 
@@ -36,10 +36,10 @@
 | CI: `test`, `e2e`, `image` | Đạt trên PR #7; [lần chạy workflow 38846004509](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38846004509) | Không áp dụng |
 | Bảo vệ nhánh `main` | Đã bật; bắt buộc dùng PR và yêu cầu các bước kiểm tra `test`, `e2e`, `image` | Không áp dụng |
 | Nền tảng AWS bằng Terraform | Đã apply: tạo 26 tài nguyên; EC2, SSM, EBS, Security Group, ECR và S3 đã được kiểm tra | Hạ tầng đã xác minh; ứng dụng chưa triển khai |
-| Mã workflow/CD Compose/script | PR #11 đã merge; PR #12 và CI main run 38871653749 đạt `test`, `e2e`, `image`, gồm Trivy cho cả hai image; [CD run 38871872686](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38871872686) dừng tại OIDC assume-role | Chưa chạy |
+| Mã workflow/CD Compose/script | PR #11, #12 và #13 đã merge; CI main run 38873716817 đạt `test`, `e2e`, `image`; [CD run 38873976002](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38873976002) đã push image nhưng SSM command lỗi đường dẫn script (exit 127) | Chưa triển khai |
 | AWS runtime configuration | Ba Parameter Store parameter được xác minh metadata `SecureString`; EC2 `running`, SSM `Online`; không truy xuất secret value | Sẵn sàng theo các kiểm tra nêu trên |
-| IAM OIDC trust cho release role | Plan đã review: chỉ cập nhật subject cũ sang immutable subject đúng repo/nhánh; 0 tạo, 1 update, 0 xóa | Chưa áp dụng; PR đang chờ CI |
-| CD lên EC2, migration production, health/version | Chưa chạy; OIDC từ chối assume-role trước ECR push/SSM | Chưa xác minh |
+| IAM OIDC trust cho release role | Immutable subject đã apply và xác minh; plan có 0 tạo, 1 cập nhật, 0 xóa | Đã áp dụng |
+| CD lên EC2, migration production, health/version | SSM dừng trước khi chạy script triển khai; không xác nhận migration hay health/version | Chưa xác minh |
 
 - Backend đã qua kiểm tra kiểu (`npm run typecheck`), lint, unit test (6), tạo Prisma Client, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
 - Trạng thái hiện tại: **Đã kiểm thử local**, chưa **Xác minh trên môi trường triển khai**. Bằng chứng local (16/10/2026):

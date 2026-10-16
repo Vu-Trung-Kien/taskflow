@@ -171,8 +171,9 @@ jobs:
         run: |
           set -euo pipefail
           tar -czf "$RUNNER_TEMP/taskflow-deploy.tar.gz" \
-            deploy/compose.production.yaml \
-            deploy/deploy-release.sh
+            -C deploy \
+            compose.production.yaml \
+            deploy-release.sh
 
       - name: Deploy through Systems Manager
         env:
