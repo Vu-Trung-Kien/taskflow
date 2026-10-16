@@ -17,6 +17,7 @@ Workflow [CD](../.github/workflows/cd.yml) tự chạy sau khi CI thành công t
 ## Hoạt động phát hành
 
 - Release tự động chỉ chạy sau workflow `CI` thành công trên `main`. Workflow OIDC chỉ dùng IAM role để push/pull image và gửi SSM command; GitHub không có quyền đọc Parameter Store.
+- IAM trust phải khớp immutable OIDC subject của GitHub, bao gồm owner ID, repository ID và nhánh `main`; Terraform giữ điều kiện này giới hạn đúng repository/nhánh.
 - ECR lưu API image ở tag `<commit-sha>` và image migration ở `<commit-sha>-migrator`. Cả hai tag là bất biến; workflow kiểm tra Trivy trước khi push và dùng lại đúng image nếu retry.
 - Migrator image chỉ giữ production dependencies cùng Prisma CLI/`dotenv` đã ghim phiên bản; npm và các dev tools được loại bỏ để tránh phát hành image chứa lỗ hổng không cần thiết. CI cũng build và quét cả hai image.
 - EC2 dùng Docker Compose riêng, PostgreSQL gắn trực tiếp vào `/var/lib/taskflow/postgres` trên EBS, không publish cổng database. API chỉ bind vào `127.0.0.1:3000`; chưa có reverse proxy/HTTPS trong bước này.

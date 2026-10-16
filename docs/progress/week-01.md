@@ -11,7 +11,8 @@
 - Endpoint `/version` trả về `gitSha` và `buildTime` từ biến môi trường `GIT_SHA` và `BUILD_TIME`.
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 - CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
-- Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image. Sau khi PR #11 merge, CI trên `main` đạt nhưng CD run 38869916866 dừng ở Trivy scan của migrator image (16 HIGH ở Node packages, 3 HIGH ở Go binary); các bước OIDC, ECR push và SSM đều bị bỏ qua, chưa có triển khai EC2. Đã tối giản migrator image, thêm scan migrator vào CI; build image, migration trên PostgreSQL dùng một lần và Trivy local đều đạt (không phát hiện HIGH/CRITICAL). Chờ CI PR xác nhận.
+- Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image. CD run 38869916866 ban đầu dừng ở Trivy migrator (16 HIGH ở Node packages, 3 HIGH ở Go binary); sau khi tối giản image, build, migration trên PostgreSQL dùng một lần và Trivy local đạt, PR #12 cùng CI trên `main` đều đạt. CD run 38871872686 sau đó dừng ở AWS `AssumeRoleWithWebIdentity`; không push image hay gửi SSM command.
+- Sau khi người dùng làm mới profile MFA, AWS CLI xác minh ba parameter production tồn tại với loại `SecureString`, EC2 `running` và Systems Manager `Online`; không đọc giá trị parameter. Trust policy có provider/audience đúng nhưng dùng subject cũ. GitHub xác nhận repository thuộc rollout immutable OIDC subject sau 15/07/2026. Terraform đã được cập nhật để giới hạn subject theo owner ID, repository ID và nhánh `main`; plan đã review chỉ có 1 thay đổi tại role release, 0 thêm/0 xóa. Cần merge PR và apply thay đổi trust trước khi retry CD. Chưa có triển khai ứng dụng.
 - Đã viết Terraform bootstrap cho state và nền tảng AWS; PR #8 đã merge vào `main`; kiểm tra định dạng/xác thực local cùng CI `test`, `e2e`, `image` đều đạt. Đã apply Terraform foundation và xác minh các tài nguyên AWS; ứng dụng chưa được triển khai lên EC2.
 
 ## Chưa triển khai
@@ -35,8 +36,10 @@
 | CI: `test`, `e2e`, `image` | Đạt trên PR #7; [lần chạy workflow 38846004509](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38846004509) | Không áp dụng |
 | Bảo vệ nhánh `main` | Đã bật; bắt buộc dùng PR và yêu cầu các bước kiểm tra `test`, `e2e`, `image` | Không áp dụng |
 | Nền tảng AWS bằng Terraform | Đã apply: tạo 26 tài nguyên; EC2, SSM, EBS, Security Group, ECR và S3 đã được kiểm tra | Hạ tầng đã xác minh; ứng dụng chưa triển khai |
-| Mã workflow/CD Compose/script | PR #11 đã merge; [CI trên main run 38869809187](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38869809187) đạt; [CD run 38869916866](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38869916866) dừng tại Trivy migrator; thay đổi giảm thành phần migrator và kiểm thử Trivy/migration local đạt, chờ CI PR | Chưa chạy |
-| CD lên EC2, migration production, health/version | Chưa chạy; không push image và không gửi SSM command vì scan thất bại | Chưa xác minh |
+| Mã workflow/CD Compose/script | PR #11 đã merge; PR #12 và CI main run 38871653749 đạt `test`, `e2e`, `image`, gồm Trivy cho cả hai image; [CD run 38871872686](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38871872686) dừng tại OIDC assume-role | Chưa chạy |
+| AWS runtime configuration | Ba Parameter Store parameter được xác minh metadata `SecureString`; EC2 `running`, SSM `Online`; không truy xuất secret value | Sẵn sàng theo các kiểm tra nêu trên |
+| IAM OIDC trust cho release role | Plan đã review: chỉ cập nhật subject cũ sang immutable subject đúng repo/nhánh; 0 tạo, 1 update, 0 xóa | Chưa áp dụng; PR đang chờ CI |
+| CD lên EC2, migration production, health/version | Chưa chạy; OIDC từ chối assume-role trước ECR push/SSM | Chưa xác minh |
 
 - Backend đã qua kiểm tra kiểu (`npm run typecheck`), lint, unit test (6), tạo Prisma Client, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
 - Trạng thái hiện tại: **Đã kiểm thử local**, chưa **Xác minh trên môi trường triển khai**. Bằng chứng local (16/10/2026):

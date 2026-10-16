@@ -21,6 +21,28 @@ variable "github_repository" {
   default     = "Vu-Trung-Kien/taskflow"
 }
 
+variable "github_owner_id" {
+  description = "Immutable GitHub owner ID used in the repository OIDC subject claim."
+  type        = string
+  default     = "187419462"
+
+  validation {
+    condition     = can(regex("^[0-9]+$", var.github_owner_id))
+    error_message = "github_owner_id must be a numeric GitHub ID."
+  }
+}
+
+variable "github_repository_id" {
+  description = "Immutable GitHub repository ID used in the repository OIDC subject claim."
+  type        = string
+  default     = "1417026529"
+
+  validation {
+    condition     = can(regex("^[0-9]+$", var.github_repository_id))
+    error_message = "github_repository_id must be a numeric GitHub ID."
+  }
+}
+
 variable "github_branch" {
   description = "Only this branch can assume the GitHub Actions release role."
   type        = string
