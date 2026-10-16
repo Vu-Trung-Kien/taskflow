@@ -31,6 +31,14 @@ describe('Health (e2e)', () => {
       expect(res.body.info.database.status).toBe('up');
     });
 
+    it('GET /version trả về build metadata', async () => {
+      const res = await request(app.getHttpServer()).get('/version').expect(200);
+      expect(res.body).toEqual({
+        gitSha: process.env.GIT_SHA ?? 'unknown',
+        buildTime: process.env.BUILD_TIME ?? 'unknown',
+      });
+    });
+
     it('GET / không còn tồn tại (404)', async () => {
       await request(app.getHttpServer()).get('/').expect(404);
     });
