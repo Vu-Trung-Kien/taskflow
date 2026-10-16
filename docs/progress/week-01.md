@@ -8,6 +8,7 @@
 - Tạo Docker Compose cho PostgreSQL, MailHog và SeaweedFS làm S3 emulator dùng trong môi trường local.
 - Đóng gói backend bằng Docker multi-stage, chạy non-root, sinh Prisma Client khi build và kiểm tra liveness tại `/health/live`; Compose chờ PostgreSQL healthy trước khi khởi chạy API.
 - Endpoint `/health/ready` kiểm tra truy vấn PostgreSQL và trả về trạng thái unavailable khi database không kết nối được.
+- Endpoint `/version` trả về `gitSha` và `buildTime` từ biến môi trường `GIT_SHA` và `BUILD_TIME`.
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 
 ## Chưa triển khai
@@ -20,4 +21,4 @@
 
 - Prisma schema và migration hiện là nền tảng thử nghiệm, chưa phải thiết kế dữ liệu cuối cùng.
 - Các thư mục `frontend/`, `deploy/` và `infra/terraform/` hiện chỉ được giữ chỗ; chưa có triển khai bên trong.
-- Backend đã qua `npm test -- --runInBand src/app.controller.spec.ts` (4 tests), `npm run lint`, `npm run build`, `npm run db:generate && npm run test:e2e -- --runInBand` (3 tests), `docker compose config --quiet` và `docker compose up -d --build api`; hai endpoint health đã được xác minh qua HTTP trong Compose.
+- Backend đã qua unit test, e2e test, lint, build, kiểm tra Compose và chạy trong Compose; `/health/live`, `/health/ready` và `/version` đã được xác minh.

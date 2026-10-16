@@ -22,6 +22,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:?Thiếu POSTGRES_USER trong .env}:${POSTGRES_PASSWORD:?Thiếu POSTGRES_PASSWORD trong .env}@postgres:5432/${POSTGRES_DB:?Thiếu POSTGRES_DB trong .env}?schema=public

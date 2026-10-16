@@ -30,6 +30,16 @@ describe('AppController (e2e)', () => {
       .expect({ status: 'ok' });
   });
 
+  it('/version (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/version')
+      .expect(200)
+      .expect({
+        gitSha: process.env.GIT_SHA ?? 'unknown',
+        buildTime: process.env.BUILD_TIME ?? 'unknown',
+      });
+  });
+
   it('/health/ready (GET)', () => {
     return request(app.getHttpServer())
       .get('/health/ready')

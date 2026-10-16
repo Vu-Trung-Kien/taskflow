@@ -4,6 +4,7 @@ import {
   Inject,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppService } from './app.service';
 import {
   DATABASE_PROBE,
@@ -14,6 +15,7 @@ import {
 export class AppController {
   constructor(
     private readonly appService: AppService,
+    private readonly configService: ConfigService,
     @Inject(DATABASE_PROBE) private readonly databaseProbe: DatabaseProbe,
   ) {}
 
@@ -25,6 +27,14 @@ export class AppController {
   @Get('health/live')
   getLiveness(): { status: 'ok' } {
     return { status: 'ok' };
+  }
+
+  @Get('version')
+  getVersion(): { gitSha: string; buildTime: string } {
+    return {
+      gitSha: this.configService.get<string>('GIT_SHA') ?? 'unknown',
+      buildTime: this.configService.get<string>('BUILD_TIME') ?? 'unknown',
+    };
   }
 
   @Get('health/ready')

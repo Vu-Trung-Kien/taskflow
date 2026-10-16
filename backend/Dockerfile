@@ -11,7 +11,12 @@ RUN npm run db:generate && npm run build && npm prune --omit=dev
 
 FROM node:22-alpine AS runtime
 
+ARG GIT_SHA=unknown
+ARG BUILD_TIME=unknown
+
 ENV NODE_ENV=production
+ENV GIT_SHA=${GIT_SHA} \
+    BUILD_TIME=${BUILD_TIME}
 WORKDIR /app
 
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
