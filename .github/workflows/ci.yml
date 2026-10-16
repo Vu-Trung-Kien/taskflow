@@ -78,12 +78,27 @@ jobs:
             --build-arg BUILD_TIME="${BUILD_TIME}" \
             --tag taskflow-api:ci \
             ./backend
+          docker build \
+            --target migrator \
+            --build-arg GIT_SHA="${GITHUB_SHA}" \
+            --build-arg BUILD_TIME="${BUILD_TIME}" \
+            --tag taskflow-migrator:ci \
+            ./backend
         env:
           BUILD_TIME: ${{ steps.metadata.outputs.build_time }}
       - name: Scan API image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: taskflow-api:ci
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Scan migrator image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: taskflow-migrator:ci
           format: table
           exit-code: "1"
           ignore-unfixed: true

@@ -11,14 +11,14 @@
 - Endpoint `/version` trả về `gitSha` và `buildTime` từ biến môi trường `GIT_SHA` và `BUILD_TIME`.
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 - CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
-- Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image. PR #11 có CI `test`, `e2e`, `image` đạt; workflow CD chưa được kích hoạt vì chưa merge vào `main`, ứng dụng chưa chạy trên EC2.
+- Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image. Sau khi PR #11 merge, CI trên `main` đạt nhưng CD run 38869916866 dừng ở Trivy scan của migrator image (16 HIGH ở Node packages, 3 HIGH ở Go binary); các bước OIDC, ECR push và SSM đều bị bỏ qua, chưa có triển khai EC2. Đã tối giản migrator image, thêm scan migrator vào CI; build image, migration trên PostgreSQL dùng một lần và Trivy local đều đạt (không phát hiện HIGH/CRITICAL). Chờ CI PR xác nhận.
 - Đã viết Terraform bootstrap cho state và nền tảng AWS; PR #8 đã merge vào `main`; kiểm tra định dạng/xác thực local cùng CI `test`, `e2e`, `image` đều đạt. Đã apply Terraform foundation và xác minh các tài nguyên AWS; ứng dụng chưa được triển khai lên EC2.
 
 ## Chưa triển khai
 
 - Frontend và các API nghiệp vụ.
 - Triển khai ứng dụng lên EC2 và xác minh `/health/ready`, `/version`.
-- Cấu hình SSM SecureString production, xác minh workflow CD trên GitHub và triển khai ứng dụng/migration lên EC2.
+- Xác minh workflow CD chạy xanh sau khi sửa Trivy gate và triển khai ứng dụng/migration lên EC2. Người dùng xác nhận đã cấu hình GitHub variables và SSM parameters; chưa thể xác minh metadata SSM/EC2 bằng AWS CLI tại máy làm việc vì phiên AWS đủ quyền chưa khả dụng.
 - Thiết lập backup/restore và monitoring.
 - Chưa xác minh backend trên EC2.
 
@@ -35,8 +35,8 @@
 | CI: `test`, `e2e`, `image` | Đạt trên PR #7; [lần chạy workflow 38846004509](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38846004509) | Không áp dụng |
 | Bảo vệ nhánh `main` | Đã bật; bắt buộc dùng PR và yêu cầu các bước kiểm tra `test`, `e2e`, `image` | Không áp dụng |
 | Nền tảng AWS bằng Terraform | Đã apply: tạo 26 tài nguyên; EC2, SSM, EBS, Security Group, ECR và S3 đã được kiểm tra | Hạ tầng đã xác minh; ứng dụng chưa triển khai |
-| Mã workflow/CD Compose/script | PR #11; [CI run 38856113782](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38856113782) đạt `test`, `e2e`, `image`; cú pháp workflow/script và Compose đã kiểm tra cục bộ | CD chưa chạy |
-| CD lên EC2, migration production, health/version | Chưa chạy; cần cấu hình SSM SecureString trước | Chưa xác minh |
+| Mã workflow/CD Compose/script | PR #11 đã merge; [CI trên main run 38869809187](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38869809187) đạt; [CD run 38869916866](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38869916866) dừng tại Trivy migrator; thay đổi giảm thành phần migrator và kiểm thử Trivy/migration local đạt, chờ CI PR | Chưa chạy |
+| CD lên EC2, migration production, health/version | Chưa chạy; không push image và không gửi SSM command vì scan thất bại | Chưa xác minh |
 
 - Backend đã qua kiểm tra kiểu (`npm run typecheck`), lint, unit test (6), tạo Prisma Client, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
 - Trạng thái hiện tại: **Đã kiểm thử local**, chưa **Xác minh trên môi trường triển khai**. Bằng chứng local (16/10/2026):
