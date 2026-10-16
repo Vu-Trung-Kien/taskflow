@@ -1,5 +1,5 @@
 ## Mô tả
-<!-- Thay đổi gì và vì sao -->
+<!-- Mô tả nội dung thay đổi và lý do thực hiện -->
 
 ## Loại thay đổi
 - [ ] feat
@@ -14,4 +14,4 @@
 - [ ] Có ảnh hưởng schema DB? (có/không)
 
 ## Cách kiểm tra
-<!-- Lệnh hoặc các bước để xác minh -->
+<!-- Ghi lệnh hoặc các bước đã dùng để xác minh thay đổi -->

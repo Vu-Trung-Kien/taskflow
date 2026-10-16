@@ -1,124 +1,150 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Logo Nest" /></a>
 </p>
 
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+  <p align="center">Framework <a href="http://nodejs.org" target="_blank">Node.js</a> tiến bộ, hỗ trợ xây dựng ứng dụng phía máy chủ hiệu quả và có khả năng mở rộng.</p>
     <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="Phiên bản NPM" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Giấy phép package" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="Lượt tải NPM" /></a>
 <a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Cộng đồng Discord"/></a>
 <a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
 <a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Ủng hộ qua PayPal"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Ủng hộ dự án"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Theo dõi Nest trên Twitter"></a>
 </p>
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+## Mô tả
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Repository khởi đầu cho framework TypeScript [Nest](https://github.com/nestjs/nest).
 
-## Project setup
+## Thiết lập dự án
 
 ```bash
 $ npm install
 ```
 
-## Compile and run the project
+## Biên dịch và chạy dự án
 
 ```bash
-# development
+# môi trường phát triển
 $ npm run start
 
-# watch mode
+# chế độ theo dõi thay đổi
 $ npm run start:dev
 
-# production mode
+# môi trường production
 $ npm run start:prod
 ```
 
-## Run tests
+## Chạy kiểm thử
 
 ```bash
-# unit tests
+# kiểm thử unit
 $ npm run test
 
-# e2e tests
+# kiểm thử e2e
 $ npm run test:e2e
 
-# test coverage
+# độ bao phủ kiểm thử
 $ npm run test:cov
 ```
 
-## Deployment
+## Triển khai
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Khi sẵn sàng triển khai ứng dụng NestJS lên production, hãy tham khảo
+[tài liệu triển khai](https://docs.nestjs.com/deployment) để biết các bước giúp
+ứng dụng vận hành hiệu quả.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Nếu cần nền tảng cloud để triển khai ứng dụng NestJS, có thể tham khảo
+[Mau](https://mau.nestjs.com), nền tảng chính thức để triển khai NestJS trên
+AWS. Mau đơn giản hóa quy trình triển khai:
 
 ```bash
 $ npm install -g @nestjs/mau
 $ mau deploy
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Với Mau, bạn có thể triển khai ứng dụng chỉ sau vài thao tác và tập trung vào
+xây dựng tính năng thay vì quản lý hạ tầng.
 
-## Observability
+## Observability (khả năng quan sát)
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+Với ứng dụng production, observability giúp hiểu cách hệ thống hoạt động, phát
+hiện sớm sự cố và duy trì hiệu năng ổn định.
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+[NestJS Observe](https://observe.nestjs.com) tự động instrument ứng dụng
+NestJS, cung cấp khả năng quan sát hệ thống với ít bước cấu hình:
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+- **Distributed tracing:** Theo dõi request qua nhiều service và hiểu luồng xử
+  lý trong hệ thống.
+- **Phân tích waterfall:** Trực quan hóa quá trình xử lý request để tìm thao
+  tác chậm, nút thắt và độ trễ bất thường.
+- **Phân tích hiệu năng:** Phân tích hiệu năng ứng dụng theo thời gian thực và
+  nhanh chóng xác định khu vực cần tối ưu.
+- **Metrics:** Theo dõi các chỉ số quan trọng của ứng dụng và hạ tầng để nắm
+  tình trạng hệ thống cũng như xu hướng hiệu năng.
+- **Logging:** Tập trung log và liên kết log với trace cùng telemetry khác để
+  hỗ trợ gỡ lỗi.
+- **Theo dõi lỗi:** Phát hiện lỗi nhanh và điều tra nguyên nhân cùng ngữ cảnh
+  liên quan.
+- **Giám sát SLA:** Theo dõi mục tiêu mức dịch vụ và nhận biết khi ứng dụng
+  sắp chạm hoặc vượt ngưỡng đã đặt.
+- **Cảnh báo:** Thiết lập cảnh báo cho lỗi nghiêm trọng, suy giảm hiệu năng,
+  vi phạm SLA và bất thường khác để nhóm xử lý kịp thời.
 
-To add it to this project:
+Để thêm vào dự án:
 
 ```bash
 $ npm install @nestjs/observe
 ```
 
-Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
+Sau đó làm theo [hướng dẫn thiết lập](https://docs.nestjs.com/observability/overview);
+cần thêm một import và app key.
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
+Gói miễn phí không yêu cầu thông tin thanh toán và hỗ trợ 300.000 event mỗi
+tháng. Bạn cũng có thể xem trước [bản demo trực tiếp](https://www.observe-demo.nestjs.com/dashboard);
+không cần cài đặt gì.
 
-## Resources
+## Tài nguyên
 
-Check out a few resources that may come in handy when working with NestJS:
+Một số tài nguyên hữu ích khi làm việc với NestJS:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- Tìm hiểu thêm về framework qua [tài liệu NestJS](https://docs.nestjs.com).
+- Đặt câu hỏi và nhận hỗ trợ tại [kênh Discord](https://discord.gg/G7Qnnhy).
+- Xem các [khóa học video chính thức](https://courses.nestjs.com/) để tìm hiểu
+  sâu hơn và thực hành.
+- Triển khai ứng dụng lên AWS chỉ với vài thao tác thông qua
+  [NestJS Mau](https://mau.nestjs.com).
+- Tự động instrument ứng dụng với [NestJS Observe](https://observe.nestjs.com)
+  để đơn giản hóa distributed tracing, metrics và logging; đồng thời theo dõi
+  lỗi và hiệu năng ứng dụng NestJS.
+- Trực quan hóa đồ thị ứng dụng và tương tác với ứng dụng NestJS theo thời gian
+  thực bằng [NestJS Devtools](https://devtools.nestjs.com).
+- Nếu cần hỗ trợ cho dự án (bán thời gian hoặc toàn thời gian), tham khảo
+  [dịch vụ hỗ trợ doanh nghiệp](https://enterprise.nestjs.com).
+- Theo dõi [X](https://x.com/nestframework) và
+  [LinkedIn](https://linkedin.com/company/nestjs) để cập nhật tin mới.
+- Tìm việc hoặc đăng tuyển tại [bảng việc làm chính thức](https://jobs.nestjs.com).
 
-## Support
+## Hỗ trợ
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Dự án mã nguồn mở Nest sử dụng giấy phép MIT và phát triển nhờ các nhà tài trợ
+cùng những người ủng hộ. Nếu muốn tham gia, hãy [xem thêm tại đây](https://docs.nestjs.com/support).
 
-## Stay in touch
+## Liên hệ
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Tác giả: [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Trang web: [https://nestjs.com](https://nestjs.com/)
+- Twitter: [@nestframework](https://twitter.com/nestframework)
 
-## License
+## Giấy phép
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Nest sử dụng [giấy phép MIT](https://github.com/nestjs/nest/blob/master/LICENSE).
