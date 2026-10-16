@@ -11,11 +11,12 @@
 - Endpoint `/version` trả về `gitSha` và `buildTime` từ biến môi trường `GIT_SHA` và `BUILD_TIME`.
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 - CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
+- Terraform bootstrap state và AWS foundation đã được viết, qua kiểm tra định dạng/validate local và CI `test`, `e2e`, `image` trên PR #8; AWS chưa được plan/apply.
 
 ## Chưa triển khai
 
 - Frontend và các API nghiệp vụ.
-- Terraform cho tài nguyên AWS, quy trình bootstrap state, cấu hình ECR và triển khai EC2.
+- Apply Terraform vào AWS, cấu hình ECR và triển khai EC2.
 - Triển khai lên EC2 và xác minh trong deployment.
 - Chưa xác minh backend trên EC2.
 
@@ -29,9 +30,10 @@
 | Hạng mục | Trạng thái hiện tại | Deployment |
 |---|---|---|
 | Backend, health/version endpoints, PostgreSQL và Docker image | Tested trên local | Chưa xác minh trên EC2 |
-| CI: `test`, `e2e`, `image` | Đạt trên PR #7; [workflow run 38844558046](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38844558046) | Không áp dụng |
+| CI: `test`, `e2e`, `image` | Đạt trên PR #7; [workflow run 38846004509](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38846004509) | Không áp dụng |
 | Bảo vệ nhánh `main` | Đã bật; PR bắt buộc và yêu cầu `test`, `e2e`, `image` | Không áp dụng |
-| Terraform và CD lên EC2 | Chưa triển khai | Chưa xác minh |
+| Terraform AWS foundation | Code trong PR #8; `fmt`, `validate`, cloud-init syntax và CI đạt; chưa chạy AWS plan/apply | Chưa xác minh |
+| CD lên EC2 | Chưa triển khai | Chưa xác minh |
 
 - Backend đã qua typecheck (`npm run typecheck`), lint, unit test (6), Prisma generate, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
 - Trạng thái hiện tại: **Tested trên local**, chưa **Verified in Deployment**. Bằng chứng local (16/10/2026):
@@ -42,5 +44,7 @@
   - `docker inspect taskflow-api-1 --format '{{json .State.Health}}'` → trạng thái `healthy`, `FailingStreak=0` sau khi healthcheck chạy.
   - `curl http://127.0.0.1:3000/health/live`, `/health/ready` và `/version` → lần lượt trả `{"status":"ok"}`, `{"status":"ok"}` và `{"gitSha":"local-verified","buildTime":"2026-10-16T03:12:00Z"}`.
   - `docker build --target migrator --tag taskflow-migrator:local ./backend` → build thành công.
-- CI run 38844558046 đã xanh với ba job `test`, `e2e`, `image`; branch protection của `main` đã được kiểm tra sau khi bật và yêu cầu đúng ba status checks trên.
+- CI run 38846004509 trên PR #7 xanh với ba job `test`, `e2e`, `image`; PR #7 đã merge vào `main`. Branch protection yêu cầu đúng ba status checks.
+- CI run 38846749487 trên PR #8 xanh với ba job `test`, `e2e`, `image`.
+- Terraform có hai root riêng: bootstrap state bucket và AWS foundation. `terraform fmt -check -recursive infra/bootstrap infra/terraform`, `terraform -chdir=infra/bootstrap validate`, `terraform -chdir=infra/terraform validate` và kiểm tra cú pháp cloud-init đã đạt local; chưa xác thực plan với AWS, chưa apply, và chưa có deployment evidence.
 - Chưa có xác minh trên EC2; các bằng chứng trên chỉ phản ánh môi trường local.

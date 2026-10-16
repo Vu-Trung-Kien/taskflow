@@ -1,24 +1,30 @@
-# Bootstrap: bucket Terraform state
+# Terraform state bootstrap
 
-Tạo một lần bằng AWS CLI (profile `taskflow`, region `ap-southeast-1`).
-Mọi tài nguyên khác do Terraform quản lý.
+This separate Terraform root creates the remote-state bucket once. It uses local
+state until the S3 bucket exists. Authenticate with the `taskflow` AWS profile
+or another explicitly selected AWS identity; do not use root credentials.
 
 ```bash
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-BUCKET="taskflow-tfstate-${ACCOUNT_ID}"
-REGION=ap-southeast-1
-
-aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" \
-  --create-bucket-configuration LocationConstraint="$REGION"
-
-aws s3api put-public-access-block --bucket "$BUCKET" \
-  --public-access-block-configuration \
-  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
-
-aws s3api put-bucket-versioning --bucket "$BUCKET" \
-  --versioning-configuration Status=Enabled
-
-aws s3api put-bucket-encryption --bucket "$BUCKET" \
-  --server-side-encryption-configuration \
-  '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+terraform -chdir=infra/bootstrap init
+terraform -chdir=infra/bootstrap validate
+terraform -chdir=infra/bootstrap plan
+terraform -chdir=infra/bootstrap apply
+terraform -chdir=infra/bootstrap output -raw state_bucket_name
 ```
+
+The bucket is account-scoped, versioned, encrypted, blocked from public access,
+and denies non-TLS requests. Keep the local bootstrap state file private and
+back it up securely; never commit it.
+
+After bootstrap, copy `infra/terraform/backend.hcl.example` to the ignored
+`infra/terraform/backend.hcl`, replace the account ID in `bucket`, then run:
+
+```bash
+terraform -chdir=infra/terraform init \
+  -backend-config=backend.hcl
+```
+
+The production root uses S3 lockfiles (`use_lockfile = true`) and requires
+Terraform 1.10 or newer. Review the plan carefully before applying because it
+creates billable AWS resources. No AWS resources are created by `validate` or
+`plan`.

@@ -27,3 +27,5 @@ API lắng nghe trên `http://localhost:3000`; PostgreSQL, MailHog và SeaweedFS
 
 - [Báo cáo tiến độ tuần 1](docs/progress/week-01.md)
 - [ADR-0004: runtime image, health checks, migrations và S3 local](docs/decisions/ADR-0004-runtime-image-and-local-s3.md)
+- [Bootstrap Terraform state](infra/bootstrap/README.md)
+- [Terraform AWS foundation](infra/terraform/README.md)
