@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { configureApplication } from '../src/app-setup';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -13,6 +14,7 @@ describe('Health (e2e)', () => {
         imports: [AppModule],
       }).compile();
       app = moduleRef.createNestApplication({ logger: false });
+      configureApplication(app);
       await app.init();
     });
 
@@ -58,6 +60,7 @@ describe('Health (e2e)', () => {
         .useValue(failingPrisma)
         .compile();
       app = moduleRef.createNestApplication({ logger: false });
+      configureApplication(app);
       await app.init();
     });
 

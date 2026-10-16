@@ -84,6 +84,7 @@ get_parameter() {
 POSTGRES_USER="$(get_parameter postgres-user)"
 POSTGRES_PASSWORD="$(get_parameter postgres-password)"
 POSTGRES_DB="$(get_parameter postgres-db)"
+JWT_ACCESS_SECRET="$(get_parameter jwt-access-secret)"
 
 if [[ ! "$POSTGRES_USER" =~ ^[A-Za-z0-9_]{1,63}$ ]]; then
   echo "SSM postgres-user must contain 1-63 ASCII letters, digits, or underscores." >&2
@@ -95,6 +96,10 @@ if [[ ! "$POSTGRES_DB" =~ ^[A-Za-z0-9_]{1,63}$ ]]; then
 fi
 if [[ ! "$POSTGRES_PASSWORD" =~ ^[A-Za-z0-9_-]{32,}$ ]]; then
   echo "SSM postgres-password must be at least 32 URL-safe ASCII characters." >&2
+  exit 1
+fi
+if [[ ! "$JWT_ACCESS_SECRET" =~ ^[A-Za-z0-9_-]{43,}$ ]]; then
+  echo "SSM jwt-access-secret must be at least 43 URL-safe ASCII characters." >&2
   exit 1
 fi
 
@@ -146,6 +151,7 @@ runtime_env_tmp="$(mktemp "${CONFIG_ROOT}/runtime.env.XXXXXX")"
   printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER"
   printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
   printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB"
+  printf 'JWT_ACCESS_SECRET=%s\n' "$JWT_ACCESS_SECRET"
   printf 'DATABASE_URL=postgresql://%s:%s@postgres:5432/%s?schema=public\n' \
     "$POSTGRES_USER" "$POSTGRES_PASSWORD" "$POSTGRES_DB"
   printf 'ECR_REPOSITORY=%s\n' "$ECR_REPOSITORY"
