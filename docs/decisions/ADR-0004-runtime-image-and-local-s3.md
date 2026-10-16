@@ -1,6 +1,6 @@
-# ADR-0004: Runtime image, health checks, migrations và S3 local
+# ADR-0004: Runtime image, kiểm tra sức khỏe, migration và S3 local
 
-- Trạng thái: Accepted
+- Trạng thái: Đã chấp thuận
 - Ngày: 2026-10-16
 
 ## Quyết định
@@ -13,7 +13,7 @@
 
 ## Hệ quả
 
-- Build image kiểm tra được cả Prisma generation và compilation; migrator chỉ chạy khi được gọi rõ ràng.
-- Liveness không đánh dấu container chết chỉ vì database tạm gián đoạn; readiness mới phản ánh khả năng phục vụ phụ thuộc database.
+- Build image kiểm tra cả quá trình tạo Prisma Client và biên dịch; migrator chỉ chạy khi được gọi rõ ràng.
+- Liveness không đánh dấu container là chết chỉ vì database tạm thời gián đoạn; readiness mới phản ánh khả năng phục vụ có phụ thuộc database.
 - CI và môi trường chạy migration cần cung cấp `DATABASE_URL`.
-- Hành vi SeaweedFS có thể khác S3 thật; cần kiểm thử tích hợp trên AWS trước khi nghiệm thu tính năng lưu file.
+- SeaweedFS có thể hoạt động khác S3 thật; cần kiểm thử tích hợp trên AWS trước khi nghiệm thu tính năng lưu file.
