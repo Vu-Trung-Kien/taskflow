@@ -13,8 +13,9 @@ Terraform root này tạo nền tảng một máy chủ tại `ap-southeast-1`:
   versioning, bucket policy chỉ cho phép TLS, CORS cho trình duyệt sử dụng
   presigned URL và thời hạn lưu bản sao lưu có thể cấu hình (mặc định 35 ngày).
 - OIDC trust của GitHub Actions chỉ cho phép nhánh `main` trong repository đã
-  cấu hình. EC2 có instance profile để dùng SSM, tải image từ ECR, truy cập S3
-  và đọc giá trị SSM Parameter Store của môi trường production.
+  cấu hình, dùng owner/repository ID trong immutable subject claim của GitHub.
+  EC2 có instance profile để dùng SSM, tải image từ ECR, truy cập S3 và đọc
+  giá trị SSM Parameter Store của môi trường production.
 
 ## Danh tính AWS và credential
 
