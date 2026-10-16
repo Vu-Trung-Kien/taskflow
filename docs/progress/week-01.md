@@ -36,10 +36,10 @@
 - Trạng thái hiện tại: **Tested trên local**, chưa **Verified in Deployment**. Bằng chứng local (16/10/2026):
   - `docker compose exec -T api id` → `uid=1000(node) gid=1000(node) groups=1000(node)`.
   - `docker compose exec -T api ls -la dist/generated/prisma` → có `client.js`, `internal/` và `models/`; client Prisma 7 được biên dịch cùng source.
-  - `docker images taskflow-api` → `taskflow-api:latest`, ID `ebddf39f810e`, content size `183MB`.
+  - `docker images taskflow-api` → `taskflow-api:latest`, ID `a7487724150c`, content size `186MB`.
   - `docker history --no-trunc taskflow-api | grep -iE 'postgresql://|secret|password'` → không có kết quả khớp.
   - `docker inspect taskflow-api-1 --format '{{json .State.Health}}'` → trạng thái `healthy`, `FailingStreak=0` sau khi healthcheck chạy.
-  - `curl http://127.0.0.1:3000/health/live`, `/health/ready` và `/version` → lần lượt trả `{"status":"ok"}`, `{"status":"ok"}` và `{"gitSha":"local-verified","buildTime":"2026-10-16T03:00:00Z"}`.
+  - `curl http://127.0.0.1:3000/health/live`, `/health/ready` và `/version` → lần lượt trả `{"status":"ok"}`, `{"status":"ok"}` và `{"gitSha":"local-verified","buildTime":"2026-10-16T03:12:00Z"}`.
   - `docker build --target migrator --tag taskflow-migrator:local ./backend` → build thành công.
 - GitHub Actions đã được cấu hình; kết quả CI trên PR đang chờ. Branch protection chưa được bật.
 - Chưa có xác minh trên EC2; các bằng chứng trên chỉ phản ánh môi trường local.
