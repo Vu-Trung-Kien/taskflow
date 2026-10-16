@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
 
@@ -6,10 +6,17 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
-RUN npm run db:generate && npm run build && npm prune --omit=dev
+RUN npm run db:generate && npm run build
 
-FROM node:22-alpine AS runtime
+FROM build AS migrator
+
+USER node
+CMD ["npm", "run", "db:migrate:deploy"]
+
+FROM build AS production-deps
+RUN npm prune --omit=dev
+
+FROM node:22-bookworm-slim AS runtime
 
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=unknown
@@ -19,7 +26,7 @@ ENV GIT_SHA=${GIT_SHA} \
     BUILD_TIME=${BUILD_TIME}
 WORKDIR /app
 
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=production-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/package.json ./package.json
 
