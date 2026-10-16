@@ -10,14 +10,14 @@
 - Endpoint `/health/ready` kiểm tra truy vấn PostgreSQL và trả về trạng thái unavailable khi database không kết nối được.
 - Endpoint `/version` trả về `gitSha` và `buildTime` từ biến môi trường `GIT_SHA` và `BUILD_TIME`.
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
-- CI workflow đã được thêm với ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy). Kết quả GitHub Actions đang chờ; chưa ghi nhận là CI đã đạt.
+- CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
 
 ## Chưa triển khai
 
 - Frontend và các API nghiệp vụ.
 - Terraform cho tài nguyên AWS, quy trình bootstrap state, cấu hình ECR và triển khai EC2.
 - Triển khai lên EC2 và xác minh trong deployment.
-- CI chưa có kết quả xanh trên PR; branch protection và required checks chưa được xác nhận.
+- Chưa xác minh backend trên EC2.
 
 ## Ghi chú
 
@@ -29,7 +29,8 @@
 | Hạng mục | Trạng thái hiện tại | Deployment |
 |---|---|---|
 | Backend, health/version endpoints, PostgreSQL và Docker image | Tested trên local | Chưa xác minh trên EC2 |
-| CI: `test`, `e2e`, `image` | Đã cấu hình; đang chờ workflow run trên PR #7 | Không áp dụng |
+| CI: `test`, `e2e`, `image` | Đạt trên PR #7; [workflow run 38844558046](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38844558046) | Không áp dụng |
+| Bảo vệ nhánh `main` | Đã bật; PR bắt buộc và yêu cầu `test`, `e2e`, `image` | Không áp dụng |
 | Terraform và CD lên EC2 | Chưa triển khai | Chưa xác minh |
 
 - Backend đã qua typecheck (`npm run typecheck`), lint, unit test (6), Prisma generate, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
@@ -41,5 +42,5 @@
   - `docker inspect taskflow-api-1 --format '{{json .State.Health}}'` → trạng thái `healthy`, `FailingStreak=0` sau khi healthcheck chạy.
   - `curl http://127.0.0.1:3000/health/live`, `/health/ready` và `/version` → lần lượt trả `{"status":"ok"}`, `{"status":"ok"}` và `{"gitSha":"local-verified","buildTime":"2026-10-16T03:12:00Z"}`.
   - `docker build --target migrator --tag taskflow-migrator:local ./backend` → build thành công.
-- GitHub Actions đã được cấu hình; kết quả CI trên PR đang chờ. Branch protection chưa được bật.
+- CI run 38844558046 đã xanh với ba job `test`, `e2e`, `image`; branch protection của `main` đã được kiểm tra sau khi bật và yêu cầu đúng ba status checks trên.
 - Chưa có xác minh trên EC2; các bằng chứng trên chỉ phản ánh môi trường local.
