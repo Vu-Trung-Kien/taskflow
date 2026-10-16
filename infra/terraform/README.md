@@ -7,7 +7,8 @@ Terraform root này tạo nền tảng một máy chủ tại `ap-southeast-1`:
   container API không được security group mở ra ngoài.
 - Một EBS gp3 mã hóa riêng, mount tại `/var/lib/taskflow/postgres` và bật
   `prevent_destroy`. Cấu hình Compose khi triển khai phải dùng image PostgreSQL
-  có UID 999 (ví dụ `postgres:16-bookworm`) cho bind mount này.
+  có UID 999 (ví dụ `postgres:16-bookworm`) và đặt datadir trong thư mục con
+  `/var/lib/taskflow/postgres/data` để tránh thư mục `lost+found` của ext4.
 - ECR dùng tag bất biến và lifecycle policy giữ lại 10 image mới nhất.
 - Hai S3 bucket riêng tư cho tệp đính kèm và bản sao lưu PostgreSQL, có mã hóa,
   versioning, bucket policy chỉ cho phép TLS, CORS cho trình duyệt sử dụng

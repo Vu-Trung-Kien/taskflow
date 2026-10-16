@@ -37,7 +37,12 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
   exit 1
 fi
 
-install -d -m 0750 "$INSTALL_ROOT" "$CONFIG_ROOT" "$DATA_ROOT"
+install -d -m 0750 "$INSTALL_ROOT" "$CONFIG_ROOT"
+if ! mountpoint -q "$DATA_ROOT"; then
+  echo "PostgreSQL EBS volume is not mounted at ${DATA_ROOT}." >&2
+  exit 1
+fi
+install -d -o 999 -g 999 -m 0700 "${DATA_ROOT}/data"
 
 if ! docker compose version >/dev/null 2>&1; then
   command -v curl >/dev/null 2>&1 || {
