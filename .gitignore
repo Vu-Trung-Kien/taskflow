@@ -23,6 +23,7 @@ dist/
 build/
 coverage/
 *.log
+*.tsbuildinfo
 
 # OS / IDE
 .DS_Store
