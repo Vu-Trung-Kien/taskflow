@@ -11,7 +11,7 @@
 - Endpoint `/version` trả về `gitSha` và `buildTime` từ biến môi trường `GIT_SHA` và `BUILD_TIME`.
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 - CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
-- Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image; mới xác minh cú pháp cục bộ, chưa chạy trên GitHub hoặc EC2.
+- Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image. PR #11 có CI `test`, `e2e`, `image` đạt; workflow CD chưa được kích hoạt vì chưa merge vào `main`, ứng dụng chưa chạy trên EC2.
 - Đã viết Terraform bootstrap cho state và nền tảng AWS; PR #8 đã merge vào `main`; kiểm tra định dạng/xác thực local cùng CI `test`, `e2e`, `image` đều đạt. Đã apply Terraform foundation và xác minh các tài nguyên AWS; ứng dụng chưa được triển khai lên EC2.
 
 ## Chưa triển khai
@@ -35,7 +35,7 @@
 | CI: `test`, `e2e`, `image` | Đạt trên PR #7; [lần chạy workflow 38846004509](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38846004509) | Không áp dụng |
 | Bảo vệ nhánh `main` | Đã bật; bắt buộc dùng PR và yêu cầu các bước kiểm tra `test`, `e2e`, `image` | Không áp dụng |
 | Nền tảng AWS bằng Terraform | Đã apply: tạo 26 tài nguyên; EC2, SSM, EBS, Security Group, ECR và S3 đã được kiểm tra | Hạ tầng đã xác minh; ứng dụng chưa triển khai |
-| Mã workflow/CD Compose/script | Đã bổ sung, đã kiểm tra cú pháp cục bộ; chờ PR/điều kiện phát hành | Chưa chạy |
+| Mã workflow/CD Compose/script | PR #11; CI `test`, `e2e`, `image` đạt; cú pháp workflow/script và Compose đã kiểm tra cục bộ | CD chưa chạy |
 | CD lên EC2, migration production, health/version | Chưa chạy; cần cấu hình SSM SecureString trước | Chưa xác minh |
 
 - Backend đã qua kiểm tra kiểu (`npm run typecheck`), lint, unit test (6), tạo Prisma Client, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
