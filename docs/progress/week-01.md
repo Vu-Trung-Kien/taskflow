@@ -35,7 +35,7 @@
 | CI: `test`, `e2e`, `image` | Đạt trên PR #7; [lần chạy workflow 38846004509](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38846004509) | Không áp dụng |
 | Bảo vệ nhánh `main` | Đã bật; bắt buộc dùng PR và yêu cầu các bước kiểm tra `test`, `e2e`, `image` | Không áp dụng |
 | Nền tảng AWS bằng Terraform | Đã apply: tạo 26 tài nguyên; EC2, SSM, EBS, Security Group, ECR và S3 đã được kiểm tra | Hạ tầng đã xác minh; ứng dụng chưa triển khai |
-| Mã workflow/CD Compose/script | PR #11; CI `test`, `e2e`, `image` đạt; cú pháp workflow/script và Compose đã kiểm tra cục bộ | CD chưa chạy |
+| Mã workflow/CD Compose/script | PR #11; [CI run 38856113782](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38856113782) đạt `test`, `e2e`, `image`; cú pháp workflow/script và Compose đã kiểm tra cục bộ | CD chưa chạy |
 | CD lên EC2, migration production, health/version | Chưa chạy; cần cấu hình SSM SecureString trước | Chưa xác minh |
 
 - Backend đã qua kiểm tra kiểu (`npm run typecheck`), lint, unit test (6), tạo Prisma Client, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
