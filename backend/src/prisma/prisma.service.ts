@@ -2,12 +2,11 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
-import { DatabaseProbe } from './database-probe';
 
 @Injectable()
 export class PrismaService
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy, DatabaseProbe
+  implements OnModuleInit, OnModuleDestroy
 {
   constructor(configService: ConfigService) {
     const adapter = new PrismaPg({
@@ -22,9 +21,5 @@ export class PrismaService
 
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
-  }
-
-  async check(): Promise<void> {
-    await this.$queryRaw`SELECT 1`;
   }
 }
