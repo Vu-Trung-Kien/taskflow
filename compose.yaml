@@ -18,6 +18,20 @@ services:
       timeout: 3s
       retries: 10
 
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:?Thiếu POSTGRES_USER trong .env}:${POSTGRES_PASSWORD:?Thiếu POSTGRES_PASSWORD trong .env}@postgres:5432/${POSTGRES_DB:?Thiếu POSTGRES_DB trong .env}?schema=public
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   mailhog:
     image: mailhog/mailhog:v1.0.1
     restart: unless-stopped
