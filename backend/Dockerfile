@@ -15,13 +15,17 @@ RUN npm ci
 COPY . .
 RUN npm run db:generate && npm run build
 
-FROM build AS migrator
-
-USER node
-CMD ["npm", "run", "db:migrate:deploy"]
-
 FROM build AS production-deps
 RUN npm prune --omit=dev
+
+FROM production-deps AS migrator
+
+RUN npm pkg delete devDependencies \
+  && npm install --no-save --package-lock=false --omit=dev prisma@7.10.1 dotenv@18.0.8 \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
+USER node
+CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy", "--config", "prisma7.config.ts"]
 
 FROM base AS runtime
 
