@@ -1,0 +1,41 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf update -y
+dnf install -y docker amazon-ssm-agent
+systemctl enable --now docker
+systemctl enable --now amazon-ssm-agent
+usermod -aG docker ec2-user
+
+EXPECTED_VOLUME_SERIAL="${postgres_volume_serial}"
+POSTGRES_DEVICE=""
+for attempt in $(seq 1 60); do
+  for candidate in /dev/nvme*n1; do
+    [ -b "$candidate" ] || continue
+    serial="$(lsblk -dn -o SERIAL "$candidate" | tr -d ' -')"
+    if [ "$serial" = "$EXPECTED_VOLUME_SERIAL" ]; then
+      POSTGRES_DEVICE="$candidate"
+      break 2
+    fi
+  done
+  sleep 2
+done
+
+if [ -z "$POSTGRES_DEVICE" ]; then
+  echo "Could not locate the attached PostgreSQL EBS volume." >&2
+  exit 1
+fi
+
+if ! blkid "$POSTGRES_DEVICE" >/dev/null 2>&1; then
+  mkfs.ext4 -F -L taskflow-postgres "$POSTGRES_DEVICE"
+fi
+
+POSTGRES_UUID="$(blkid -s UUID -o value "$POSTGRES_DEVICE")"
+if ! grep -q "UUID=$POSTGRES_UUID" /etc/fstab; then
+  echo "UUID=$POSTGRES_UUID /var/lib/taskflow/postgres ext4 defaults,nofail 0 2" >> /etc/fstab
+fi
+
+mkdir -p /var/lib/taskflow/postgres
+mount /var/lib/taskflow/postgres
+chown 999:999 /var/lib/taskflow/postgres
+chmod 0750 /var/lib/taskflow/postgres
