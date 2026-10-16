@@ -8,7 +8,7 @@ TaskFlow được phát triển theo từng bước, bắt đầu với nền t�
 
 - **Backend:** NestJS, TypeScript, Prisma 7.
 - **Database:** PostgreSQL 16.
-- **Lưu trữ đối tượng local:** SeaweedFS cung cấp S3 API; MinIO không còn là lựa chọn trong cấu hình hiện tại.
+- **Lưu trữ đối tượng local:** SeaweedFS cung cấp S3 API.
 - **Email local:** MailHog.
 - **Đóng gói:** Docker multi-stage; Compose điều phối các service local.
 - **Triển khai dự kiến:** AWS, với hạ tầng được quản lý bằng Terraform.
@@ -25,6 +25,8 @@ API lắng nghe trên `http://localhost:3000`; PostgreSQL, MailHog và SeaweedFS
 
 ## Tài liệu
 
+- [Yêu cầu sản phẩm](docs/requirements.md)
+- [Thiết kế cơ sở dữ liệu](docs/database-design.md)
 - [Báo cáo tiến độ tuần 1](docs/progress/week-01.md)
 - [ADR-0004: runtime image, health check, migration và S3 local](docs/decisions/ADR-0004-runtime-image-and-local-s3.md)
 - [Khởi tạo Terraform state](infra/bootstrap/README.md)

@@ -31,6 +31,29 @@ Repository khởi đầu cho framework TypeScript [Nest](https://github.com/nest
 $ npm install
 ```
 
+Khi chạy API trực tiếp, sao chép `.env.example` thành `.env`, đặt `DATABASE_URL`
+trỏ tới môi trường local và tạo `JWT_ACCESS_SECRET` ngẫu nhiên dài ít nhất 32
+byte. Không dùng giá trị mẫu làm secret production.
+
+## API nghiệp vụ hiện có
+
+Mọi endpoint dưới đây, ngoại trừ đăng ký/đăng nhập/refresh/logout và health/version,
+đều yêu cầu `Authorization: Bearer <access-token>`.
+
+- `POST /auth/register`, `POST /auth/login`: đăng ký/đăng nhập; trả access JWT 15
+  phút và đặt refresh token trong cookie HttpOnly.
+- `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`: xoay/thu hồi phiên
+  refresh có giới hạn tuyệt đối 30 ngày và xem hồ sơ hiện tại. Logout thu hồi cả
+  access JWT gắn với phiên ngay lập tức.
+- `/projects`: CRUD dự án bằng archive/restore; Owner quản lý thành viên và có
+  thể chuyển quyền Owner.
+- `/projects/:projectId/tasks`: CRUD task/sub-task; Owner/Member được ghi,
+  Viewer chỉ đọc. Xóa task là soft-delete; task có thể được lọc/khôi phục.
+- `/health/live`, `/health/ready`, `/version`: kiểm tra vận hành.
+
+Email verification, frontend, bình luận, upload S3, notifications, recurrence,
+dashboard, CSV và feature flags chưa được triển khai.
+
 ## Biên dịch và chạy dự án
 
 ```bash

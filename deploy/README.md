@@ -7,12 +7,13 @@ Workflow [CD](../.github/workflows/cd.yml) tự chạy sau khi CI thành công t
 1. Trong GitHub repository settings, tạo hai **Actions variables** (không phải secrets):
    - `AWS_ROLE_ARN`: output Terraform `github_actions_role_arn`.
    - `EC2_INSTANCE_ID`: instance ID production.
-2. Trong AWS Systems Manager Parameter Store, tạo ba parameter loại **SecureString**, dùng AWS managed key `aws/ssm`, ở region `ap-southeast-1`:
+2. Trong AWS Systems Manager Parameter Store, tạo bốn parameter loại **SecureString**, dùng AWS managed key `aws/ssm`, ở region `ap-southeast-1`:
    - `/taskflow/production/postgres-user`: 1-63 ký tự ASCII, chỉ chữ cái, chữ số, `_`.
    - `/taskflow/production/postgres-password`: tối thiểu 32 ký tự ASCII, chỉ chữ cái, chữ số, `-`, `_`. Tạo mật khẩu ngẫu nhiên mạnh; không gửi qua chat, không ghi vào GitHub, shell history hay tài liệu.
    - `/taskflow/production/postgres-db`: 1-63 ký tự ASCII, chỉ chữ cái, chữ số, `_`.
 3. Dùng cùng các giá trị này cho lần đầu khởi tạo PostgreSQL. Thay đổi chúng sau khi PostgreSQL đã được tạo không tự đổi user/password/database bên trong volume; cần quy trình rotation riêng.
-4. Chỉ merge/release khi cả ba parameter đã tạo và EC2 vẫn `Online` trong Systems Manager. Không lưu secret trong repository hoặc Actions variables.
+4. Tạo `/taskflow/production/jwt-access-secret` với secret ngẫu nhiên base64url dài ít nhất 43 ký tự; không dùng lại PostgreSQL password.
+5. Chỉ merge/release khi cả bốn parameter đã tạo và EC2 vẫn `Online` trong Systems Manager. Không lưu secret trong repository hoặc Actions variables.
 
 ## Hoạt động phát hành
 
@@ -23,6 +24,7 @@ Workflow [CD](../.github/workflows/cd.yml) tự chạy sau khi CI thành công t
 - EC2 dùng Docker Compose riêng; EBS mount tại `/var/lib/taskflow/postgres`, còn PostgreSQL datadir đặt trong thư mục con `/var/lib/taskflow/postgres/data` để không đụng `lost+found` của filesystem. Script kiểm tra EBS đã mount và tạo thư mục với owner `999:999`; database không publish cổng. API chỉ bind vào `127.0.0.1:3000`; chưa có reverse proxy/HTTPS trong bước này.
 - Nếu chưa có Docker Compose plugin, deploy tải bản `v2.39.4` từ release chính thức và xác minh SHA-256 trước khi cài.
 - Mỗi lần deploy: pull image, chờ PostgreSQL healthy, chạy `prisma migrate deploy` bằng migrator image riêng, thay API, rồi xác minh `/health/ready` và `gitSha` của `/version`. Script khôi phục image API cũ nếu API mới không healthy; migration database không tự rollback.
+- API cần `jwt-access-secret` từ Parameter Store để ký access JWT; runtime env file trên EC2 được lưu quyền `0600`. Refresh token là ngẫu nhiên, chỉ lưu hash trong PostgreSQL và được gửi qua cookie HttpOnly.
 - Lifecycle policy ECR hiện giữ tối đa 10 image trong repository. Do mỗi release dùng hai image riêng, số bản phát hành có thể rollback còn lại tối đa khoảng năm; kiểm tra/chỉnh lifecycle policy nếu cần giữ nhiều lịch sử hơn.
 
 ## Rollback ứng dụng
