@@ -11,13 +11,13 @@
 - Endpoint `/version` trả về `gitSha` và `buildTime` từ biến môi trường `GIT_SHA` và `BUILD_TIME`.
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 - CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
-- Đã viết Terraform bootstrap cho state và nền tảng AWS; PR #8 đã merge vào `main`; kiểm tra định dạng/xác thực local cùng CI `test`, `e2e`, `image` đều đạt. Đã khởi tạo backend S3 và chạy Terraform plan trên AWS; chưa apply.
+- Đã viết Terraform bootstrap cho state và nền tảng AWS; PR #8 đã merge vào `main`; kiểm tra định dạng/xác thực local cùng CI `test`, `e2e`, `image` đều đạt. Đã apply Terraform foundation và xác minh các tài nguyên AWS; ứng dụng chưa được triển khai lên EC2.
 
 ## Chưa triển khai
 
 - Frontend và các API nghiệp vụ.
-- Áp dụng Terraform trên AWS, cấu hình ECR và triển khai EC2.
-- Triển khai lên EC2 và xác minh trong môi trường triển khai.
+- Triển khai ứng dụng lên EC2 và xác minh `/health/ready`, `/version`.
+- Thiết lập workflow CD, migration production, backup/restore và monitoring.
 - Chưa xác minh backend trên EC2.
 
 ## Ghi chú
@@ -32,7 +32,7 @@
 | Backend, endpoint health/version, PostgreSQL và Docker image | Đã kiểm thử local | Chưa xác minh trên EC2 |
 | CI: `test`, `e2e`, `image` | Đạt trên PR #7; [lần chạy workflow 38846004509](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/38846004509) | Không áp dụng |
 | Bảo vệ nhánh `main` | Đã bật; bắt buộc dùng PR và yêu cầu các bước kiểm tra `test`, `e2e`, `image` | Không áp dụng |
-| Nền tảng AWS bằng Terraform | PR #8 đã merge; `fmt`, `validate`, CI đạt. Plan AWS đề xuất tạo 26 tài nguyên, không update/delete; chưa apply | Chưa xác minh trên EC2 |
+| Nền tảng AWS bằng Terraform | Đã apply: tạo 26 tài nguyên; EC2, SSM, EBS, Security Group, ECR và S3 đã được kiểm tra | Hạ tầng đã xác minh; ứng dụng chưa triển khai |
 | CD lên EC2 | Chưa triển khai | Chưa xác minh |
 
 - Backend đã qua kiểm tra kiểu (`npm run typecheck`), lint, unit test (6), tạo Prisma Client, `prisma migrate deploy` (không còn migration chờ), e2e (4), build, kiểm tra Compose và chạy trong Compose.
@@ -49,6 +49,10 @@
 - Terraform có hai root riêng: khởi tạo state bucket và nền tảng AWS. `terraform fmt -check -recursive infra/bootstrap infra/terraform`, `terraform -chdir=infra/bootstrap validate`, `terraform -chdir=infra/terraform validate` và kiểm tra cú pháp cloud-init đều đạt local.
 - Ngày 16/10/2026, AWS CLI xác nhận profile operator đang dùng assumed role có MFA; state bucket ở `ap-southeast-1`, bật đủ bốn cờ public-access-block, versioning và mã hóa AES256. Không có bucket policy trên state bucket; người dùng chấp thuận ngoại lệ không có explicit TLS-deny policy cho lần plan này. Không thay đổi policy bucket.
 - `terraform -chdir=infra/terraform init -backend-config=backend.hcl` thành công với backend S3 hiện có; state object và lock object đều không tồn tại trước plan. AWS credential phiên tạm được chuyển trực tiếp trong bộ nhớ cho Terraform, không ghi vào file.
-- `terraform -chdir=infra/terraform fmt -check -recursive` và `terraform -chdir=infra/terraform validate` đạt. `terraform plan` thành công: 26 tài nguyên được đề xuất tạo, 3 data source được đọc, không có update/delete/replacement. Plan dự kiến EC2 `t3.small` có public IPv4, root EBS gp3 16 GiB, EBS PostgreSQL gp3 mã hóa 20 GiB, ingress công khai chỉ cổng 80/443, cùng ECR, IAM và hai S3 bucket ứng dụng. Lock object tạm đã được dọn sau plan. Không chạy `apply`; chưa có tài nguyên AWS production nào được tạo bởi Terraform.
+- `terraform -chdir=infra/terraform fmt -check -recursive` và `terraform -chdir=infra/terraform validate` đạt. Plan được review trước khi apply: 26 tài nguyên tạo mới, 3 data source được đọc, không update/delete/replacement.
+- Apply dùng đúng saved plan đã review, hoàn tất với 26 tài nguyên thêm mới, 0 thay đổi, 0 xóa. Tài nguyên gồm EC2 `t3.small` có public IPv4, root EBS gp3 16 GiB, EBS PostgreSQL gp3 mã hóa 20 GiB, Security Group chỉ mở công khai cổng 80/443, cùng ECR, IAM/OIDC và hai S3 bucket ứng dụng.
+- Kiểm tra AWS sau apply: EC2 `running`, IMDSv2 `required`; SSM managed instance `Online`; cloud-init `done`; Docker `active`; EBS PostgreSQL ở trạng thái `in-use`, mount ext4 tại `/var/lib/taskflow/postgres`, filesystem 20 GiB và owner `999:999`. Security Group có ingress TCP 80/443 từ `0.0.0.0/0`, không có SSH/22 hoặc PostgreSQL/5432.
+- ECR xác nhận immutable tags, scan-on-push và mã hóa AES256. Hai S3 bucket ứng dụng xác nhận đủ bốn cờ public-access-block, versioning `Enabled`, AES256, policy không public và có TLS-deny. Không ghi bucket name, ARN, instance ID hoặc public IP vào báo cáo.
+- Chưa có container ứng dụng chạy trên EC2; vì vậy `/health/live`, `/health/ready`, `/version`, migration production và luồng nghiệp vụ chưa được kiểm chứng trên EC2.
 - Ước tính chi phí nền cho 730 giờ/tháng theo [AWS Price List API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html): EC2 `t3.small` khoảng 19,27 USD; 36 GiB gp3 EBS (16 GiB root + 20 GiB PostgreSQL) khoảng 3,46 USD; public IPv4 khoảng 3,65 USD (theo [biểu phí IPv4 công khai của AWS](https://aws.amazon.com/blogs/aws/new-aws-public-ipv4-address-charge-public-ip-insights/)); tổng khoảng **26,38 USD/tháng**. Chưa gồm S3/ECR lưu trữ và request, data transfer, snapshot/backup, CPU credit vượt baseline, thuế hoặc mức giảm trừ Free Tier; đây là ước tính tham khảo, không phải hóa đơn/quote.
-- Trạng thái Terraform hiện tại là **đã plan, chưa apply**; không được đánh dấu Verified in Deployment. Chưa xác minh trên EC2; các bằng chứng Docker ở trên chỉ phản ánh môi trường local.
+- Trạng thái hạ tầng AWS: **đã apply và đã kiểm tra các tài nguyên nêu trên**. Trạng thái ứng dụng vẫn **chưa Verified in Deployment** cho đến khi triển khai image, chạy migration và xác minh health/version trên EC2.
