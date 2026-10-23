@@ -49,10 +49,22 @@ Mọi endpoint dưới đây, ngoại trừ đăng ký/đăng nhập/refresh/log
   thể chuyển quyền Owner.
 - `/projects/:projectId/tasks`: CRUD task/sub-task; Owner/Member được ghi,
   Viewer chỉ đọc. Xóa task là soft-delete; task có thể được lọc/khôi phục.
+- `/projects/:projectId/tasks/:taskId/comments`: thành viên đọc; Owner/Member
+  tạo, sửa/xóa bình luận của mình; Owner có thể sửa/xóa bình luận của thành viên.
+- `/projects/:projectId/tasks/:taskId/attachments`: Owner/Member yêu cầu URL
+  upload presigned, xác nhận upload, lấy URL download hoặc xóa tệp của mình;
+  Owner có thể xóa tệp của thành viên. URL hết hạn sau 5 phút, tệp tối đa
+  10 MiB và MIME type phải nằm trong allowlist cấu hình.
 - `/health/live`, `/health/ready`, `/version`: kiểm tra vận hành.
 
-Email verification, frontend, bình luận, upload S3, notifications, recurrence,
-dashboard, CSV và feature flags chưa được triển khai.
+Local development dùng SeaweedFS với S3 API. Production dùng bucket S3 riêng tư
+và IAM role của EC2; không cấu hình access key AWS tĩnh. Set `S3_BUCKET` và
+`S3_REGION`; local Compose cũng đặt endpoint nội bộ `S3_ENDPOINT` cùng endpoint
+trình duyệt `S3_PUBLIC_ENDPOINT`. `S3_ALLOWED_CONTENT_TYPES` nhận danh sách MIME
+type phân tách bằng dấu phẩy.
+
+Frontend, notifications/email, recurrence, dashboard, CSV, feature flags,
+HTTPS, backup/restore và monitoring chưa được triển khai.
 
 ## Biên dịch và chạy dự án
 

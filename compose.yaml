@@ -29,6 +29,14 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:?Thiếu POSTGRES_USER trong .env}:${POSTGRES_PASSWORD:?Thiếu POSTGRES_PASSWORD trong .env}@postgres:5432/${POSTGRES_DB:?Thiếu POSTGRES_DB trong .env}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Thiếu JWT_ACCESS_SECRET trong .env}
+      S3_BUCKET: ${S3_BUCKET:?Thiếu S3_BUCKET trong .env}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_ALLOWED_CONTENT_TYPES: ${S3_ALLOWED_CONTENT_TYPES:-application/pdf,image/gif,image/jpeg,image/png,image/webp,text/plain}
       PORT: 3000
     ports:
       - "127.0.0.1:3000:3000"

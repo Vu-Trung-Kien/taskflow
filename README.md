@@ -13,7 +13,7 @@ Backend MVP đã được triển khai lên EC2:
 - CRUD task và sub-task một cấp; trạng thái, mức ưu tiên, hạn hoàn thành, người thực hiện; soft-delete/restore task.
 - Health endpoints `/health/live`, `/health/ready` và thông tin build `/version`.
 
-Frontend, bình luận, đính kèm S3, thông báo, dashboard, xuất CSV, task lặp và feature flags chưa được triển khai. HTTPS/domain, backup/restore đã diễn tập, monitoring/cảnh báo và kiểm thử tải cũng còn thiếu; backend chưa mở công khai qua reverse proxy.
+Backend hiện có API bình luận và quy trình đính kèm S3 dùng presigned URL trong mã nguồn; migration và vận hành production của tính năng này chưa được phát hành/xác minh. Frontend, thông báo/email, dashboard, xuất CSV, task lặp và feature flags chưa được triển khai. HTTPS/domain, backup/restore đã diễn tập, monitoring/cảnh báo và kiểm thử tải cũng còn thiếu; backend chưa mở công khai qua reverse proxy.
 
 ## Công nghệ
 
@@ -53,6 +53,8 @@ Các endpoint nghiệp vụ cần header `Authorization: Bearer <access-token>`,
 - `/projects` — CRUD dự án; `DELETE /projects/:projectId` archive, `POST /projects/:projectId/restore` khôi phục.
 - `/projects/:projectId/members` — quản lý membership; chỉ Owner có thể quản lý thành viên và chuyển quyền.
 - `/projects/:projectId/tasks` — task/sub-task; Owner và Member được ghi, Viewer chỉ đọc.
+- `/projects/:projectId/tasks/:taskId/comments` — thành viên đọc; Owner/Member tạo bình luận; tác giả sửa/xóa bình luận của mình, Owner có thể quản lý mọi bình luận.
+- `/projects/:projectId/tasks/:taskId/attachments` — Owner/Member upload/download qua presigned URL; giới hạn 10 MiB, MIME allowlist, URL 5 phút.
 - `GET /health/live`, `GET /health/ready`, `GET /version`
 
 Chi tiết về quyền và schema được ghi trong [yêu cầu sản phẩm](docs/requirements.md) và [thiết kế cơ sở dữ liệu](docs/database-design.md).
