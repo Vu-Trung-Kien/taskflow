@@ -85,6 +85,7 @@ POSTGRES_USER="$(get_parameter postgres-user)"
 POSTGRES_PASSWORD="$(get_parameter postgres-password)"
 POSTGRES_DB="$(get_parameter postgres-db)"
 JWT_ACCESS_SECRET="$(get_parameter jwt-access-secret)"
+S3_BUCKET="$(get_parameter attachments-bucket)"
 
 if [[ ! "$POSTGRES_USER" =~ ^[A-Za-z0-9_]{1,63}$ ]]; then
   echo "SSM postgres-user must contain 1-63 ASCII letters, digits, or underscores." >&2
@@ -100,6 +101,10 @@ if [[ ! "$POSTGRES_PASSWORD" =~ ^[A-Za-z0-9_-]{32,}$ ]]; then
 fi
 if [[ ! "$JWT_ACCESS_SECRET" =~ ^[A-Za-z0-9_-]{43,}$ ]]; then
   echo "SSM jwt-access-secret must be at least 43 URL-safe ASCII characters." >&2
+  exit 1
+fi
+if [[ ! "$S3_BUCKET" =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]]; then
+  echo "SSM attachments-bucket must be a valid 3-63 character S3 bucket name." >&2
   exit 1
 fi
 
@@ -152,6 +157,9 @@ runtime_env_tmp="$(mktemp "${CONFIG_ROOT}/runtime.env.XXXXXX")"
   printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
   printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB"
   printf 'JWT_ACCESS_SECRET=%s\n' "$JWT_ACCESS_SECRET"
+  printf 'S3_BUCKET=%s\n' "$S3_BUCKET"
+  printf 'S3_REGION=%s\n' "$AWS_REGION"
+  printf 'S3_ALLOWED_CONTENT_TYPES=application/pdf,image/gif,image/jpeg,image/png,image/webp,text/plain\n'
   printf 'DATABASE_URL=postgresql://%s:%s@postgres:5432/%s?schema=public\n' \
     "$POSTGRES_USER" "$POSTGRES_PASSWORD" "$POSTGRES_DB"
   printf 'ECR_REPOSITORY=%s\n' "$ECR_REPOSITORY"

@@ -12,7 +12,8 @@
 - Có unit test và e2e test mẫu cho endpoint gốc của backend.
 - CI workflow có ba job độc lập: `test`, `e2e` (PostgreSQL 16 + migrate deploy) và `image` (build + Trivy); cả ba đã đạt trên PR #7.
 - Đã bổ sung workflow CD OIDC → ECR → SSM, Compose production riêng và script chạy migration/kiểm tra health-version/rollback image. Trong quá trình phát hành, Trivy ban đầu phát hiện 19 HIGH ở migrator image; đã tối giản image, thêm scan migrator vào CI, build/migration/Trivy local đạt và PR #12 merge. Trust IAM ban đầu không khớp immutable OIDC subject của GitHub; PR #13 sửa Terraform trust đúng repository/nhánh `main` và apply một cập nhật role. Lần triển khai sau phát hiện hai lỗi vận hành: cấu trúc gói SSM sai đường dẫn (PR #14) và PostgreSQL không khởi tạo khi bind thẳng vào EBS mount root có `lost+found` (PR #15). Sau khi sửa, CI main run 38876373522 và CD run 38876642192 đều đạt; backend MVP sau đó được phát hành ở PR #17, CI main run 38902111360 và CD run 38902418581 đều đạt.
-- Đã xây backend MVP theo PR #17: đăng ký/đăng nhập Argon2id, access JWT 15 phút gắn auth session, refresh token xoay vòng/thu hồi, CRUD dự án và membership Owner/Member/Viewer, CRUD task/sub-task một cấp, archive/restore dự án và soft-delete task. Thêm hai migration cho project/task và auth session; CI PR, CI main run 38902111360 và CD run 38902418581 đều đạt.
+- PR #17 bổ sung schema và hai migration cho dự án, membership, task/sub-task và auth sessions; CI PR, CI main run 38902111360 và CD run 38902418581 đều đạt.
+- Chức năng backend hiện có, đã triển khai production: (1) đăng ký và đăng nhập; (2) access JWT 15 phút và refresh token xoay vòng, thu hồi khi logout/phát hiện replay; (3) RBAC theo dự án với Owner/Member/Viewer; (4) CRUD dự án và thành viên, chuyển Owner; (5) CRUD task/sub-task một cấp với trạng thái, ưu tiên, due date và assignee; (6) archive/restore dự án và soft-delete/restore task.
 - AWS CLI xác minh metadata của bốn Parameter Store production parameter là `SecureString`, gồm JWT signing key; không đọc giá trị secret. CD run 38902418581 đã apply hai migration mới lên EC2. SSM read-only verification xác nhận API/PostgreSQL healthy, auth APIs được nạp cùng signing secret, `/health/live`, `/health/ready`, `/version`, UID runtime, published ports và migration records.
 - Đã viết Terraform bootstrap cho state và nền tảng AWS; PR #8 đã merge vào `main`; kiểm tra định dạng/xác thực local cùng CI `test`, `e2e`, `image` đều đạt. Đã apply Terraform foundation và xác minh các tài nguyên AWS.
 
@@ -26,6 +27,7 @@
 ## Ghi chú
 
 - Prisma schema hiện có MVP cho User, Project, membership, Task/sub-task và auth sessions; các tính năng comments/attachments/notifications/recurrence/dashboard vẫn là thiết kế tương lai.
+- Quyết định kiến trúc đang dùng được mô tả tại README, tài liệu deploy/Terraform và schema/migration; thư mục ADR riêng đã được loại bỏ để tránh tài liệu quyết định trùng lặp.
 - `frontend/` vẫn là thư mục giữ chỗ; `deploy/` có Compose production, script CD và runbook.
 
 ## Ma trận trạng thái
@@ -73,5 +75,4 @@
 - Kiểm tra AWS sau apply: EC2 `running`, IMDSv2 `required`; SSM managed instance `Online`; cloud-init `done`; Docker `active`; EBS PostgreSQL ở trạng thái `in-use`, mount ext4 tại `/var/lib/taskflow/postgres`, filesystem 20 GiB và owner `999:999`. Security Group có ingress TCP 80/443 từ `0.0.0.0/0`, không có SSH/22 hoặc PostgreSQL/5432.
 - ECR xác nhận immutable tags, scan-on-push và mã hóa AES256. Hai S3 bucket ứng dụng xác nhận đủ bốn cờ public-access-block, versioning `Enabled`, AES256, policy không public và có TLS-deny. Không ghi bucket name, ARN, instance ID hoặc public IP vào báo cáo.
 - Sau CD run 38902418581, backend MVP đã được triển khai và xác minh trên EC2. Frontend và các tính năng chưa triển khai nêu trên chưa có kết quả kiểm thử trên EC2.
-- Ước tính chi phí nền cho 730 giờ/tháng theo [AWS Price List API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html): EC2 `t3.small` khoảng 19,27 USD; 36 GiB gp3 EBS (16 GiB root + 20 GiB PostgreSQL) khoảng 3,46 USD; public IPv4 khoảng 3,65 USD (theo [biểu phí IPv4 công khai của AWS](https://aws.amazon.com/blogs/aws/new-aws-public-ipv4-address-charge-public-ip-insights/)); tổng khoảng **26,38 USD/tháng**. Chưa gồm S3/ECR lưu trữ và request, data transfer, snapshot/backup, CPU credit vượt baseline, thuế hoặc mức giảm trừ Free Tier; đây là ước tính tham khảo, không phải hóa đơn/quote.
 - Trạng thái hạ tầng AWS: **đã apply và đã kiểm tra các tài nguyên nêu trên**. Backend nền tảng cùng auth/project/task MVP hiện **Verified in Deployment** theo các bằng chứng SSM ở trên; frontend, các tính năng sản phẩm còn lại, HTTPS, backup/restore và monitoring vẫn chưa triển khai.
