@@ -24,14 +24,16 @@
 | Production dependency audit (`cd backend && npm audit --omit=dev --audit-level=high`) | Đạt: không phát hiện vulnerability |
 | `git diff --check` | Đạt |
 
-## Chưa xác minh hoặc chưa triển khai
+## Cập nhật xác minh ngày 24/10/2026
 
-- E2E và integration với PostgreSQL/S3 chưa chạy được trong môi trường làm việc này vì Docker không khả dụng; kiểm thử e2e mới được bổ sung nhưng chưa thực thi.
-- Migration collaboration chưa được áp dụng vào database local hoặc production; chưa có release mới, chưa deploy EC2 và chưa xác minh S3 trên AWS.
+- CI trên PR cho commit collaboration `eb127c0` đã đạt cả ba job `test`, `e2e` và `image` ([CI run 39882111302](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/39882111302)). Job E2E đã chạy migration trên PostgreSQL dùng riêng cho CI và toàn bộ E2E tests đạt.
+- Tại môi trường làm việc hiện tại, `npm run db:generate`, `npm run lint`, `npm run typecheck`, `npm test -- --runInBand` (3 suites, 7 tests) và `npm run build` đều đạt. Docker CLI không khả dụng; không chạy E2E local hoặc thử upload/download thực tế với SeaweedFS.
+- E2E hiện xác minh quyền bình luận và tạo yêu cầu presigned upload URL, nhưng chưa thực hiện luồng upload object, xác nhận qua `HeadObject`, download hoặc xóa trên một S3-compatible service. Vì vậy kiểm thử CI không thay thế integration test thực với SeaweedFS/AWS.
+- Migration đã được kiểm tra trong CI trên database dùng riêng cho job, nhưng chưa có bằng chứng đã áp dụng vào production. Không tìm thấy CD thành công cho commit collaboration; lần chạy CD mới nhất được kiểm tra là `skipped` ([CD run 39882364685](https://github.com/Vu-Trung-Kien/taskflow/actions/runs/39882364685)). Chưa xác minh collaboration trên EC2 hoặc S3 production.
 - Chưa chạy Terraform plan/apply cho parameter S3 bucket mới; việc Terraform validate chỉ xác nhận cấu hình, không tạo/cập nhật tài nguyên.
-- Chưa kiểm thử upload/download thực tế trên SeaweedFS hoặc AWS S3. CORS bucket hiện có cần được cấu hình khớp origin frontend khi frontend/domain được triển khai.
+- CORS bucket hiện có cần được cấu hình khớp origin frontend khi frontend/domain được triển khai.
 - Frontend, thông báo/email, dashboard/CSV, task lặp, feature flags, HTTPS, backup/restore và Prometheus/Grafana vẫn chưa triển khai.
 
 ## Trạng thái
 
-Backend có implementation cho bình luận và quy trình presigned S3 ở mã nguồn, đã qua typecheck, lint, unit tests, build và kiểm tra Terraform. Tính năng **chưa được xác minh bằng E2E hoặc triển khai production**; cần chạy migration và xác minh upload/download trước khi đánh dấu hoàn tất trên môi trường AWS.
+Backend có implementation cho bình luận và quy trình presigned S3 ở mã nguồn; local lint, typecheck, unit tests, build và CI E2E đều đạt. Tuy nhiên, upload/download thực tế qua S3-compatible storage và triển khai production **chưa được xác minh**; cần hoàn tất integration test và release có phê duyệt trước khi đánh dấu collaboration đã hoàn tất trên AWS.

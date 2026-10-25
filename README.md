@@ -1,6 +1,6 @@
 # TaskFlow
 
-TaskFlow là ứng dụng web quản lý dự án và công việc, đồng thời là dự án thực hành quy trình DevOps trên AWS. Repository hiện tập trung vào backend NestJS và triển khai container trên một EC2.
+TaskFlow là ứng dụng web quản lý dự án và công việc, đồng thời là dự án thực hành quy trình DevOps trên AWS. Repository có backend NestJS và frontend React; triển khai backend container trên một EC2.
 
 ## Trạng thái hiện tại
 
@@ -13,7 +13,7 @@ Backend MVP đã được triển khai lên EC2:
 - CRUD task và sub-task một cấp; trạng thái, mức ưu tiên, hạn hoàn thành, người thực hiện; soft-delete/restore task.
 - Health endpoints `/health/live`, `/health/ready` và thông tin build `/version`.
 
-Backend hiện có API bình luận và quy trình đính kèm S3 dùng presigned URL trong mã nguồn; migration và vận hành production của tính năng này chưa được phát hành/xác minh. Frontend, thông báo/email, dashboard, xuất CSV, task lặp và feature flags chưa được triển khai. HTTPS/domain, backup/restore đã diễn tập, monitoring/cảnh báo và kiểm thử tải cũng còn thiếu; backend chưa mở công khai qua reverse proxy.
+Frontend MVP React + TypeScript + Vite bao phủ các API hiện có: đăng nhập/đăng ký, quản lý dự án/thành viên, task/sub-task, bình luận và luồng attachment presigned. Frontend chưa được triển khai production. Backend có API comments và attachment trong mã nguồn; luồng storage thực tế và release production của collaboration chưa được xác minh. Backend còn thiếu thông báo/email, dashboard thống kê, xuất CSV, task lặp và feature flags. HTTPS/domain, backup/restore đã diễn tập, monitoring/cảnh báo và kiểm thử tải cũng còn thiếu; backend chưa mở công khai qua reverse proxy.
 
 ## Công nghệ
 
@@ -43,6 +43,16 @@ npm ci
 npm run db:generate
 npm run db:migrate:dev
 ```
+
+Khi API đã chạy, mở terminal khác để chạy frontend. Vite proxy các route API về `localhost:3000`, vì vậy cookie refresh vẫn cùng origin trong môi trường dev:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Mở địa chỉ Vite hiển thị trong terminal. Yêu cầu cấu hình CORS bucket S3-compatible và cách triển khai production được ghi trong [`frontend/README.md`](frontend/README.md).
 
 ## API chính
 
@@ -74,6 +84,15 @@ npm run build
 
 E2E tests cần PostgreSQL local đang chạy và `DATABASE_URL` trỏ tới database kiểm thử.
 
+Frontend:
+
+```bash
+cd frontend
+npm ci
+npm test
+npm run build
+```
+
 ## AWS và phát hành
 
 Terraform nằm trong [`infra/`](infra/); hướng dẫn state bootstrap ở [`infra/bootstrap/README.md`](infra/bootstrap/README.md) và nền tảng AWS ở [`infra/terraform/README.md`](infra/terraform/README.md). Quy trình production cùng yêu cầu Parameter Store được mô tả trong [`deploy/README.md`](deploy/README.md).
@@ -82,6 +101,7 @@ Không lưu secret vào Git, Terraform variables/state, GitHub variables hoặc 
 
 ## Tài liệu
 
+- [Báo cáo tiến độ tuần 2 (cập nhật 24/10/2026)](docs/progress/week-02.md)
 - [Báo cáo tiến độ tuần 1](docs/progress/week-01.md)
 - [Yêu cầu sản phẩm](docs/requirements.md)
 - [Thiết kế cơ sở dữ liệu](docs/database-design.md)

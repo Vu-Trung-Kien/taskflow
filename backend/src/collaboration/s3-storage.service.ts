@@ -55,6 +55,7 @@ export class S3StorageService {
       region,
       forcePathStyle: forcePathStyle === 'true',
       credentials,
+      requestChecksumCalculation: 'WHEN_REQUIRED' as const,
     };
     this.client = new S3Client({
       ...clientConfig,

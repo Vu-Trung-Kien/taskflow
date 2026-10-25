@@ -39,6 +39,7 @@ describe('S3StorageService', () => {
     expect(parsed.origin).toBe('http://localhost:8333');
     expect(parsed.pathname).toBe('/taskflow-test/project/task/file');
     expect(parsed.searchParams.get('X-Amz-Expires')).toBe('300');
+    expect(parsed.searchParams.has('X-Amz-Checksum-Crc32')).toBe(false);
     expect(parsed.searchParams.get('X-Amz-SignedHeaders')).toContain(
       'content-type',
     );
