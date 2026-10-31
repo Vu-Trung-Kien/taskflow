@@ -13,7 +13,7 @@ TaskFlow là ứng dụng web quản lý dự án và công việc, đồng th�
 2. Người dùng tạo và quản lý dự án; mỗi dự án có thành viên với một trong các vai trò Owner, Member, Viewer.
 3. Người dùng có quyền tạo, xem, cập nhật và xóa công việc trong dự án. Công việc có trạng thái, mức ưu tiên, hạn hoàn thành, người thực hiện và công việc con.
 4. Thành viên có thể bình luận và đính kèm tệp; tệp lưu trên Amazon S3 và được trao đổi bằng presigned URL.
-5. Ứng dụng có thông báo trong ứng dụng và email, dashboard thống kê, xuất báo cáo CSV.
+5. Ứng dụng có dashboard thống kê và xuất báo cáo CSV (đã hoàn tất); thông báo trong ứng dụng và email (đang phát triển).
 6. Công việc có thể lặp hằng ngày, hằng tuần hoặc hằng tháng.
 7. Có feature flag để bật/tắt tính năng mới.
 8. Có `/health/live` và `/health/ready`.
@@ -39,6 +39,7 @@ Mốc đầu tiên tập trung vào API, database và authorization; chưa bao g
 | Tạo và sửa task/sub-task | Có | Có | Không |
 | Xóa task | Có | Có | Không |
 | Bình luận/đính kèm tệp | Có | Có | Không |
+| Xem dashboard thống kê & xuất CSV | Có | Có | Có |
 | Archive/khôi phục dự án, chuyển quyền Owner | Có | Không | Không |
 
 ## Yêu cầu chất lượng và bảo mật

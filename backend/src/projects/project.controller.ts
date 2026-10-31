@@ -52,6 +52,14 @@ export class ProjectController {
     return this.projects.get(projectId, request.user.id);
   }
 
+  @Get(':projectId/metrics')
+  getMetrics(
+    @Req() request: AuthenticatedRequest,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+  ) {
+    return this.projects.getMetrics(projectId, request.user.id);
+  }
+
   @Patch(':projectId')
   update(
     @Req() request: AuthenticatedRequest,

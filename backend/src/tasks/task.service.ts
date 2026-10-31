@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ProjectRole, Prisma } from '../generated/prisma/client';
+import { ProjectRole, Prisma, TaskPriority, TaskStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectAccessService } from '../projects/project-access.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -208,6 +208,93 @@ export class TaskService {
         assignee: { select: { id: true, email: true, name: true } },
       },
     });
+  }
+
+  async exportCsv(
+    projectId: string,
+    userId: string,
+    query: ListTasksDto,
+  ): Promise<string> {
+    await this.access.requireMembership(projectId, userId);
+    const includeDeleted = query.includeDeleted === 'true';
+
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        projectId,
+        deletedAt: includeDeleted ? { not: null } : null,
+        status: query.status,
+        priority: query.priority,
+      },
+      include: {
+        assignee: { select: { id: true, email: true, name: true } },
+        createdBy: { select: { id: true, email: true, name: true } },
+        parentTask: { select: { id: true, title: true } },
+      },
+      orderBy: [{ dueAt: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    const statusLabels: Record<TaskStatus, string> = {
+      [TaskStatus.TODO]: 'Cần làm',
+      [TaskStatus.IN_PROGRESS]: 'Đang làm',
+      [TaskStatus.DONE]: 'Hoàn tất',
+      [TaskStatus.BLOCKED]: 'Bị chặn',
+    };
+
+    const priorityLabels: Record<TaskPriority, string> = {
+      [TaskPriority.LOW]: 'Thấp',
+      [TaskPriority.MEDIUM]: 'Trung bình',
+      [TaskPriority.HIGH]: 'Cao',
+      [TaskPriority.URGENT]: 'Khẩn cấp',
+    };
+
+    const headers = [
+      'Mã công việc',
+      'Tiêu đề',
+      'Mô tả',
+      'Trạng thái',
+      'Mức độ ưu tiên',
+      'Người thực hiện',
+      'Email người thực hiện',
+      'Người tạo',
+      'Công việc cha',
+      'Hạn hoàn thành (UTC)',
+      'Ngày tạo (UTC)',
+      'Ngày cập nhật (UTC)',
+    ];
+
+    const escapeCsv = (
+      value: string | number | boolean | null | undefined,
+    ): string => {
+      if (value === null || value === undefined) return '';
+      const stringValue = String(value);
+      if (
+        stringValue.includes(',') ||
+        stringValue.includes('"') ||
+        stringValue.includes('\n') ||
+        stringValue.includes('\r')
+      ) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    const rows = tasks.map((task) => [
+      escapeCsv(task.id),
+      escapeCsv(task.title),
+      escapeCsv(task.description ?? ''),
+      escapeCsv(statusLabels[task.status] ?? task.status),
+      escapeCsv(priorityLabels[task.priority] ?? task.priority),
+      escapeCsv(task.assignee?.name || task.assignee?.email || 'Chưa gán'),
+      escapeCsv(task.assignee?.email ?? ''),
+      escapeCsv(task.createdBy.name || task.createdBy.email),
+      escapeCsv(task.parentTask?.title ?? ''),
+      escapeCsv(task.dueAt ? task.dueAt.toISOString() : ''),
+      escapeCsv(task.createdAt.toISOString()),
+      escapeCsv(task.updatedAt.toISOString()),
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
+    return `\uFEFF${csvContent}`;
   }
 
   private async requireProjectAssignee(

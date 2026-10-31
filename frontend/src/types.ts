@@ -76,3 +76,32 @@ export interface AttachmentUploadPayload {
   uploadUrl: string;
   expiresInSeconds: number;
 }
+
+export interface MemberMetrics {
+  userId: string;
+  name: string | null;
+  email: string;
+  role: ProjectRole;
+  assignedTasks: number;
+  completedTasks: number;
+  overdueTasks: number;
+}
+
+export interface ProjectMetrics {
+  tasks: {
+    total: number;
+    byStatus: Record<TaskStatus, number>;
+    byPriority: Record<TaskPriority, number>;
+    overdue: number;
+    dueSoon: number;
+    completionRate: number;
+  };
+  members: {
+    total: number;
+    breakdown: MemberMetrics[];
+  };
+  activity: {
+    totalComments: number;
+    totalAttachments: number;
+  };
+}

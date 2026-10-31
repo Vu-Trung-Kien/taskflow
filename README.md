@@ -13,7 +13,7 @@ Backend MVP đã được triển khai lên EC2:
 - CRUD task và sub-task một cấp; trạng thái, mức ưu tiên, hạn hoàn thành, người thực hiện; soft-delete/restore task.
 - Health endpoints `/health/live`, `/health/ready` và thông tin build `/version`.
 
-Frontend MVP React + TypeScript + Vite bao phủ các API hiện có: đăng nhập/đăng ký, quản lý dự án/thành viên, task/sub-task, bình luận và luồng attachment presigned. Frontend chưa được triển khai production. Backend có API comments và attachment trong mã nguồn; luồng storage thực tế và release production của collaboration chưa được xác minh. Backend còn thiếu thông báo/email, dashboard thống kê, xuất CSV, task lặp và feature flags. HTTPS/domain, backup/restore đã diễn tập, monitoring/cảnh báo và kiểm thử tải cũng còn thiếu; backend chưa mở công khai qua reverse proxy.
+Frontend MVP React + TypeScript + Vite bao phủ các API hiện có: đăng nhập/đăng ký, quản lý dự án/thành viên, task/sub-task, bình luận, luồng attachment presigned, dashboard thống kê trực quan và xuất báo cáo CSV. Frontend chưa được triển khai production. Backend có đầy đủ API comments, attachment, metrics dashboard và xuất CSV trong mã nguồn; luồng storage thực tế và release production của collaboration chưa được xác minh. Backend còn thiếu thông báo/email, task lặp và feature flags. HTTPS/domain, backup/restore đã diễn tập, monitoring/cảnh báo và kiểm thử tải cũng còn thiếu; backend chưa mở công khai qua reverse proxy.
 
 ## Công nghệ
 
@@ -61,8 +61,10 @@ Các endpoint nghiệp vụ cần header `Authorization: Bearer <access-token>`,
 - `POST /auth/register`, `POST /auth/login`
 - `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`
 - `/projects` — CRUD dự án; `DELETE /projects/:projectId` archive, `POST /projects/:projectId/restore` khôi phục.
+- `GET /projects/:projectId/metrics` — thống kê tiến độ, phân bố trạng thái, mức độ ưu tiên, task quá hạn và năng suất thành viên; mọi thành viên dự án được xem.
 - `/projects/:projectId/members` — quản lý membership; chỉ Owner có thể quản lý thành viên và chuyển quyền.
 - `/projects/:projectId/tasks` — task/sub-task; Owner và Member được ghi, Viewer chỉ đọc.
+- `GET /projects/:projectId/tasks/export` — xuất danh sách công việc của dự án ra file CSV chuẩn UTF-8 kèm BOM; mọi thành viên dự án được xuất.
 - `/projects/:projectId/tasks/:taskId/comments` — thành viên đọc; Owner/Member tạo bình luận; tác giả sửa/xóa bình luận của mình, Owner có thể quản lý mọi bình luận.
 - `/projects/:projectId/tasks/:taskId/attachments` — Owner/Member upload/download qua presigned URL; giới hạn 10 MiB, MIME allowlist, URL 5 phút.
 - `GET /health/live`, `GET /health/ready`, `GET /version`
@@ -101,8 +103,7 @@ Không lưu secret vào Git, Terraform variables/state, GitHub variables hoặc 
 
 ## Tài liệu
 
-- [Báo cáo tiến độ tuần 2 (cập nhật 24/10/2026)](docs/progress/week-02.md)
-- [Báo cáo tiến độ tuần 1](docs/progress/week-01.md)
+- [Báo cáo tiến độ và Lộ trình hoàn thiện](docs/progress.md)
 - [Yêu cầu sản phẩm](docs/requirements.md)
 - [Thiết kế cơ sở dữ liệu](docs/database-design.md)
 - [Triển khai production](deploy/README.md)

@@ -299,3 +299,224 @@ h3 { margin-bottom: 0; font-size: 15px; }
   .add-member-controls input { grid-column: 1 / -1; width: 100%; }
   .add-member-controls select { width: 100%; }
 }
+
+/* Dashboard Styles */
+.dashboard-layout { display: flex; flex-direction: column; gap: 24px; margin-top: 18px; }
+.dashboard-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.dashboard-header h2 { margin-bottom: 2px; }
+.dashboard-loading { min-height: 250px; display: grid; place-items: center; }
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.metric-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  transition: transform .16s ease, border-color .16s ease;
+}
+.metric-card:hover { transform: translateY(-2px); border-color: #d1d5e4; }
+.metric-card-alert { border-left: 4px solid #e53e3e; }
+
+.metric-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.metric-icon-blue { background: #ebf4ff; }
+.metric-icon-green { background: #e6fffa; }
+.metric-icon-purple { background: var(--purple-soft); }
+.metric-icon-red { background: #fff5f5; }
+
+.metric-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.metric-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.metric-value { font-size: 24px; font-weight: 700; font-family: Manrope, sans-serif; color: var(--ink); line-height: 1.2; }
+.metric-hint { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.text-success { color: #22543d; font-weight: 600; }
+
+.dashboard-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+}
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+.dashboard-card-header h3 { font-size: 16px; font-weight: 700; }
+
+.progress-badge {
+  background: var(--purple-soft);
+  color: var(--purple-dark);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 16px;
+}
+.progress-bar-container {
+  width: 100%;
+  height: 12px;
+  background: #edf2f7;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.progress-bar-fill { height: 100%; border-radius: 6px; transition: width .4s ease; }
+.progress-fill-green { background: linear-gradient(90deg, #38a169, #48bb78); }
+.progress-stats-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dashboard-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.breakdown-list { display: flex; flex-direction: column; gap: 10px; }
+.breakdown-item-button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  background: #fcfdfe;
+  border: 1px solid #edf0f7;
+  border-radius: 8px;
+  text-align: left;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.breakdown-item-button:hover {
+  background: #f7f9ff;
+  border-color: #cbd5e1;
+  transform: translateX(2px);
+}
+.breakdown-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 13px;
+}
+.status-badge-text { font-weight: 600; color: var(--ink); }
+.font-normal { font-weight: normal; }
+
+.sub-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #edf2f7;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.sub-progress-fill { height: 100%; border-radius: 3px; }
+.status-fill-todo { background: #718096; }
+.status-fill-in-progress { background: #3182ce; }
+.status-fill-done { background: #38a169; }
+.status-fill-blocked { background: #e53e3e; }
+
+.priority-fill-urgent { background: #9b2c2c; }
+.priority-fill-high { background: #dd6b20; }
+.priority-fill-medium { background: #3182ce; }
+.priority-fill-low { background: #718096; }
+
+.activity-summary-tags { display: flex; align-items: center; gap: 8px; }
+.activity-tag {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.table-responsive { width: 100%; overflow-x: auto; }
+.workload-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.workload-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 2px solid var(--line);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.workload-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.workload-table tr:last-child td { border-bottom: none; }
+.workload-table tr:hover td { background: #fafbff; }
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.font-semibold { font-weight: 600; }
+
+.user-cell { display: flex; align-items: center; gap: 10px; }
+.user-subtext { display: block; font-size: 11px; color: var(--muted); font-weight: normal; }
+
+.badge-danger {
+  display: inline-block;
+  background: #fed7d7;
+  color: #9b2c2c;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.member-progress-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.member-percent-text { font-weight: 600; min-width: 35px; text-align: right; }
+.mini-progress-bar {
+  width: 70px;
+  height: 6px;
+  background: #edf2f7;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mini-progress-fill {
+  height: 100%;
+  background: #38a169;
+  border-radius: 3px;
+}
+
+@media (max-width: 1000px) {
+  .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-two-col { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+  .metrics-grid { grid-template-columns: 1fr; }
+  .workload-table th, .workload-table td { padding: 8px 6px; font-size: 11px; }
+  .mini-progress-bar { width: 45px; }
+}

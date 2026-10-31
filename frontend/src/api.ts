@@ -4,6 +4,7 @@ import type {
   Comment,
   Project,
   ProjectMember,
+  ProjectMetrics,
   SessionPayload,
   Task,
   User,
@@ -100,6 +101,39 @@ export async function apiRequest<T>(
   return parseResponse<T>(response);
 }
 
+export async function apiDownload(
+  path: string,
+  options: RequestInit = {},
+  allowRefresh = true,
+): Promise<Blob> {
+  const headers = new Headers(options.headers);
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
+
+  if (
+    response.status === 401 &&
+    allowRefresh &&
+    !path.startsWith('/auth/login') &&
+    !path.startsWith('/auth/register') &&
+    !path.startsWith('/auth/refresh')
+  ) {
+    const session = await refreshSession();
+    if (session) return apiDownload(path, options, false);
+  }
+
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+    throw new ApiError(errorMessage(payload, `Yêu cầu thất bại (${response.status}).`), response.status);
+  }
+
+  return response.blob();
+}
+
 export const authApi = {
   login(email: string, password: string) {
     return apiRequest<SessionPayload>('/auth/login', {
@@ -167,6 +201,9 @@ export const projectApi = {
       body: JSON.stringify({ userId }),
     });
   },
+  metrics(projectId: string) {
+    return apiRequest<ProjectMetrics>(`/projects/${projectId}/metrics`);
+  },
 };
 
 export const taskApi = {
@@ -192,6 +229,13 @@ export const taskApi = {
   },
   restore(projectId: string, taskId: string) {
     return apiRequest<Task>(`/projects/${projectId}/tasks/${taskId}/restore`, { method: 'POST' });
+  },
+  exportCsv(projectId: string, filters: { status?: string; priority?: string } = {}) {
+    const query = new URLSearchParams();
+    if (filters.status) query.set('status', filters.status);
+    if (filters.priority) query.set('priority', filters.priority);
+    const suffix = query.size ? `?${query.toString()}` : '';
+    return apiDownload(`/projects/${projectId}/tasks/export${suffix}`);
   },
 };
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, apiRequest, setAccessToken } from './api';
+import { ApiError, apiRequest, projectApi, taskApi, setAccessToken } from './api';
 
 describe('apiRequest', () => {
   beforeEach(() => {
@@ -41,5 +41,39 @@ describe('apiRequest', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/auth/refresh', expect.objectContaining({ credentials: 'include' }));
     const [, retryOptions] = fetchMock.mock.calls[2];
     expect(new Headers(retryOptions?.headers).get('Authorization')).toBe('Bearer refreshed');
+  });
+
+  it('fetches project metrics successfully', async () => {
+    setAccessToken('access-token');
+    const mockMetrics = {
+      tasks: {
+        total: 10,
+        byStatus: { TODO: 4, IN_PROGRESS: 3, DONE: 2, BLOCKED: 1 },
+        byPriority: { LOW: 2, MEDIUM: 5, HIGH: 2, URGENT: 1 },
+        overdue: 1,
+        dueSoon: 2,
+        completionRate: 20,
+      },
+      members: { total: 2, breakdown: [] },
+      activity: { totalComments: 5, totalAttachments: 3 },
+    };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(mockMetrics), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+
+    const result = await projectApi.metrics('proj-123');
+    expect(result).toEqual(mockMetrics);
+  });
+
+  it('downloads task CSV export as a Blob', async () => {
+    setAccessToken('access-token');
+    const csvContent = '\uFEFFMã công việc,Tiêu đề\n1,Task 1';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(csvContent, { status: 200, headers: { 'Content-Type': 'text/csv' } }),
+    );
+
+    const blob = await taskApi.exportCsv('proj-123', { status: 'DONE' });
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.size).toBeGreaterThan(0);
   });
 });

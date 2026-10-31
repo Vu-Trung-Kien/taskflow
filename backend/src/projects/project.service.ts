@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ProjectRole } from '../generated/prisma/client';
+import { Prisma, ProjectRole, TaskPriority, TaskStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddProjectMemberDto } from './dto/add-project-member.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -221,5 +221,163 @@ export class ProjectService {
       });
     });
     return this.listMembers(projectId, userId);
+  }
+
+  async getMetrics(projectId: string, userId: string) {
+    await this.access.requireMembership(projectId, userId);
+
+    const now = new Date();
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      activeTasks,
+      statusGroups,
+      priorityGroups,
+      overdueCount,
+      dueSoonCount,
+      members,
+      memberTaskGroups,
+      memberOverdueGroups,
+      totalComments,
+      totalAttachments,
+    ] = await Promise.all([
+      this.prisma.task.count({
+        where: { projectId, deletedAt: null },
+      }),
+      this.prisma.task.groupBy({
+        by: ['status'],
+        where: { projectId, deletedAt: null },
+        _count: { id: true },
+      }),
+      this.prisma.task.groupBy({
+        by: ['priority'],
+        where: { projectId, deletedAt: null },
+        _count: { id: true },
+      }),
+      this.prisma.task.count({
+        where: {
+          projectId,
+          deletedAt: null,
+          status: { not: TaskStatus.DONE },
+          dueAt: { lt: now },
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          projectId,
+          deletedAt: null,
+          status: { not: TaskStatus.DONE },
+          dueAt: { gte: now, lte: in7Days },
+        },
+      }),
+      this.prisma.projectMember.findMany({
+        where: { projectId },
+        include: {
+          user: { select: { id: true, email: true, name: true } },
+        },
+        orderBy: { joinedAt: 'asc' },
+      }),
+      this.prisma.task.groupBy({
+        by: ['assigneeId', 'status'],
+        where: {
+          projectId,
+          deletedAt: null,
+          assigneeId: { not: null },
+        },
+        _count: { id: true },
+      }),
+      this.prisma.task.groupBy({
+        by: ['assigneeId'],
+        where: {
+          projectId,
+          deletedAt: null,
+          status: { not: TaskStatus.DONE },
+          dueAt: { lt: now },
+          assigneeId: { not: null },
+        },
+        _count: { id: true },
+      }),
+      this.prisma.taskComment.count({
+        where: { projectId },
+      }),
+      this.prisma.attachment.count({
+        where: { projectId },
+      }),
+    ]);
+
+    const byStatus: Record<TaskStatus, number> = {
+      [TaskStatus.TODO]: 0,
+      [TaskStatus.IN_PROGRESS]: 0,
+      [TaskStatus.DONE]: 0,
+      [TaskStatus.BLOCKED]: 0,
+    };
+    for (const group of statusGroups) {
+      byStatus[group.status] = group._count.id;
+    }
+
+    const byPriority: Record<TaskPriority, number> = {
+      [TaskPriority.LOW]: 0,
+      [TaskPriority.MEDIUM]: 0,
+      [TaskPriority.HIGH]: 0,
+      [TaskPriority.URGENT]: 0,
+    };
+    for (const group of priorityGroups) {
+      byPriority[group.priority] = group._count.id;
+    }
+
+    const completedTasks = byStatus[TaskStatus.DONE];
+    const completionRate =
+      activeTasks > 0
+        ? Math.round((completedTasks / activeTasks) * 1000) / 10
+        : 0;
+
+    const memberBreakdown = members.map((member) => {
+      const memberId = member.userId;
+      let assignedCount = 0;
+      let memberDoneCount = 0;
+
+      for (const group of memberTaskGroups) {
+        if (group.assigneeId === memberId) {
+          assignedCount += group._count.id;
+          if (group.status === TaskStatus.DONE) {
+            memberDoneCount += group._count.id;
+          }
+        }
+      }
+
+      const overdueGroup = memberOverdueGroups.find(
+        (group) => group.assigneeId === memberId,
+      );
+      const memberOverdueCount = overdueGroup?._count.id ?? 0;
+
+      return {
+        userId: member.user.id,
+        name: member.user.name,
+        email: member.user.email,
+        role: member.role,
+        assignedTasks: assignedCount,
+        completedTasks: memberDoneCount,
+        overdueTasks: memberOverdueCount,
+      };
+    });
+
+    return {
+      tasks: {
+        total: activeTasks,
+        byStatus,
+        byPriority,
+        overdue: overdueCount,
+        dueSoon: dueSoonCount,
+        completionRate,
+      },
+      members: {
+        total: members.length,
+        breakdown: memberBreakdown,
+      },
+      activity: {
+        totalComments,
+        totalAttachments,
+      },
+    };
   }
 }

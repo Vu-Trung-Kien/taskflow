@@ -7,6 +7,7 @@ import type {
   Comment,
   Project,
   ProjectMember,
+  ProjectMetrics,
   ProjectRole,
   Task,
   TaskPriority,
@@ -278,8 +279,9 @@ function WorkspacePage() {
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
-  const [tab, setTab] = useState<'tasks' | 'members'>('tasks');
+  const [tab, setTab] = useState<'tasks' | 'dashboard' | 'members'>('tasks');
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
 
   const role = useMemo(
@@ -333,6 +335,31 @@ function WorkspacePage() {
     }
   }
 
+  async function handleExportCsv() {
+    setExporting(true);
+    setError('');
+    try {
+      const blob = await taskApi.exportCsv(projectId, {
+        status: status || undefined,
+        priority: priority || undefined,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const projectSlug = project?.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'tasks';
+      link.download = `taskflow-${projectSlug}-${dateStr}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (requestError) {
+      setError(messageOf(requestError));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (loading && !project) return <AppFrame><Loading label="Đang tải không gian dự án" /></AppFrame>;
   if (error && !project) return <AppFrame><main className="page-container"><div className="alert alert-error">{error}</div><Link to="/projects" className="button button-outline">← Về danh sách dự án</Link></main></AppFrame>;
   if (!project) return null;
@@ -356,9 +383,22 @@ function WorkspacePage() {
         </section>
         <div className="workspace-tabs">
           <button className={tab === 'tasks' ? 'tab active' : 'tab'} onClick={() => setTab('tasks')}>Công việc <span className="count">{tasks.length}</span></button>
+          <button className={tab === 'dashboard' ? 'tab active' : 'tab'} onClick={() => setTab('dashboard')}>Tổng quan (Dashboard)</button>
           <button className={tab === 'members' ? 'tab active' : 'tab'} onClick={() => setTab('members')}>Thành viên <span className="count">{members.length}</span></button>
         </div>
-        {tab === 'tasks' ? (
+        {tab === 'dashboard' && (
+          <DashboardPanel
+            projectId={projectId}
+            onNavigateToTasks={(filters) => {
+              if (filters?.status !== undefined) setStatus(filters.status);
+              if (filters?.priority !== undefined) setPriority(filters.priority);
+              setTab('tasks');
+            }}
+            onExportCsv={handleExportCsv}
+            exporting={exporting}
+          />
+        )}
+        {tab === 'tasks' && (
           <section className="task-layout">
             <div className="task-column">
               <div className="task-toolbar">
@@ -375,6 +415,15 @@ function WorkspacePage() {
                     <option value="">Mọi mức độ</option>
                     {Object.entries(priorityLabels).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                   </select>
+                  <button
+                    type="button"
+                    className="button button-outline button-small"
+                    onClick={() => void handleExportCsv()}
+                    disabled={exporting}
+                    title="Xuất danh sách công việc sang file CSV"
+                  >
+                    {exporting ? 'Đang xuất...' : '📥 Xuất CSV'}
+                  </button>
                   {canEdit && <label className="toggle-label compact"><input type="checkbox" checked={showDeleted} onChange={(event) => { setShowDeleted(event.target.checked); setSelectedTask(null); }} /> Đã xóa</label>}
                 </div>
               </div>
@@ -402,11 +451,303 @@ function WorkspacePage() {
               />
             )}
           </section>
-        ) : (
+        )}
+        {tab === 'members' && (
           <MembersPanel projectId={projectId} members={members} currentUserId={user?.id ?? ''} canManage={canManage} onChanged={loadWorkspace} />
         )}
       </main>
     </AppFrame>
+  );
+}
+
+function DashboardPanel({
+  projectId,
+  onNavigateToTasks,
+  onExportCsv,
+  exporting = false,
+}: {
+  projectId: string;
+  onNavigateToTasks: (filters?: { status?: string; priority?: string }) => void;
+  onExportCsv?: () => Promise<void>;
+  exporting?: boolean;
+}) {
+  const [metrics, setMetrics] = useState<ProjectMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  async function loadMetrics() {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await projectApi.metrics(projectId);
+      setMetrics(data);
+    } catch (requestError) {
+      setError(messageOf(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadMetrics();
+  }, [projectId]);
+
+  if (loading && !metrics) {
+    return <div className="dashboard-loading"><Loading label="Đang tải dữ liệu thống kê..." /></div>;
+  }
+
+  if (error && !metrics) {
+    return (
+      <div className="alert alert-error">
+        {error}
+        <button
+          className="button button-small button-outline"
+          onClick={() => void loadMetrics()}
+          style={{ marginLeft: '1rem' }}
+          type="button"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
+  if (!metrics) return null;
+
+  const { tasks, members, activity } = metrics;
+  const total = tasks.total;
+
+  return (
+    <section className="dashboard-layout">
+      <div className="dashboard-header">
+        <div>
+          <h2>Tổng quan dự án</h2>
+          <p className="muted">Số liệu thống kê tiến độ, phân bổ công việc và hoạt động của nhóm.</p>
+        </div>
+        <div className="button-row">
+          {onExportCsv && (
+            <button
+              className="button button-outline button-small"
+              onClick={() => void onExportCsv()}
+              disabled={exporting}
+              type="button"
+              title="Xuất danh sách công việc sang file CSV"
+            >
+              {exporting ? 'Đang xuất...' : '📥 Xuất CSV'}
+            </button>
+          )}
+          <button
+            className="button button-outline button-small"
+            onClick={() => void loadMetrics()}
+            disabled={loading}
+            type="button"
+          >
+            {loading ? 'Đang cập nhật...' : '↻ Làm mới số liệu'}
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="alert alert-error" role="alert">{error}</div>}
+
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <div className="metric-icon metric-icon-blue">📋</div>
+          <div className="metric-body">
+            <span className="metric-label">Tổng công việc</span>
+            <strong className="metric-value">{tasks.total}</strong>
+            <span className="metric-hint">Đang hoạt động</span>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon metric-icon-green">✅</div>
+          <div className="metric-body">
+            <span className="metric-label">Đã hoàn thành</span>
+            <strong className="metric-value">{tasks.byStatus.DONE}</strong>
+            <span className="metric-hint text-success">{tasks.completionRate}% hoàn tất</span>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon metric-icon-purple">⏳</div>
+          <div className="metric-body">
+            <span className="metric-label">Đang thực hiện</span>
+            <strong className="metric-value">{tasks.byStatus.IN_PROGRESS}</strong>
+            <span className="metric-hint">{tasks.byStatus.TODO} việc cần làm</span>
+          </div>
+        </div>
+
+        <div className={`metric-card ${tasks.overdue > 0 ? 'metric-card-alert' : ''}`}>
+          <div className="metric-icon metric-icon-red">⚠️</div>
+          <div className="metric-body">
+            <span className="metric-label">Công việc quá hạn</span>
+            <strong className={`metric-value ${tasks.overdue > 0 ? 'danger-text' : ''}`}>
+              {tasks.overdue}
+            </strong>
+            <span className="metric-hint">{tasks.dueSoon} việc tới hạn trong 7 ngày</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <div className="dashboard-card-header">
+          <h3>Tiến độ tổng thể dự án</h3>
+          <span className="progress-badge">{tasks.completionRate}%</span>
+        </div>
+        <div className="progress-bar-container">
+          <div
+            className="progress-bar-fill progress-fill-green"
+            style={{ width: `${Math.min(100, Math.max(0, tasks.completionRate))}%` }}
+          />
+        </div>
+        <div className="progress-stats-row">
+          <span>{tasks.byStatus.DONE} / {tasks.total} công việc đã hoàn thành</span>
+          {tasks.byStatus.BLOCKED > 0 && (
+            <span className="danger-text">⛔ {tasks.byStatus.BLOCKED} việc đang bị chặn</span>
+          )}
+        </div>
+      </div>
+
+      <div className="dashboard-two-col">
+        <div className="dashboard-card">
+          <div className="dashboard-card-header">
+            <h3>Phân bố theo trạng thái</h3>
+            <span className="muted small-text">Bấm để lọc công việc</span>
+          </div>
+          <div className="breakdown-list">
+            {(['TODO', 'IN_PROGRESS', 'DONE', 'BLOCKED'] as TaskStatus[]).map((st) => {
+              const count = tasks.byStatus[st] ?? 0;
+              const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  className="breakdown-item-button"
+                  onClick={() => onNavigateToTasks({ status: st, priority: '' })}
+                  title={`Lọc công việc ${statusLabels[st]}`}
+                >
+                  <div className="breakdown-item-top">
+                    <span className="status-badge-text">{statusLabels[st]}</span>
+                    <strong>{count} <span className="muted font-normal">({percent}%)</span></strong>
+                  </div>
+                  <div className="sub-progress-bar">
+                    <div
+                      className={`sub-progress-fill status-fill-${st.toLowerCase().replace('_', '-')}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="dashboard-card">
+          <div className="dashboard-card-header">
+            <h3>Mức độ ưu tiên</h3>
+            <span className="muted small-text">Bấm để lọc công việc</span>
+          </div>
+          <div className="breakdown-list">
+            {(['URGENT', 'HIGH', 'MEDIUM', 'LOW'] as TaskPriority[]).map((pr) => {
+              const count = tasks.byPriority[pr] ?? 0;
+              const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+              return (
+                <button
+                  key={pr}
+                  type="button"
+                  className="breakdown-item-button"
+                  onClick={() => onNavigateToTasks({ status: '', priority: pr })}
+                  title={`Lọc công việc mức ${priorityLabels[pr]}`}
+                >
+                  <div className="breakdown-item-top">
+                    <span className={`priority-badge priority-${pr.toLowerCase()}`}>{priorityLabels[pr]}</span>
+                    <strong>{count} <span className="muted font-normal">({percent}%)</span></strong>
+                  </div>
+                  <div className="sub-progress-bar">
+                    <div
+                      className={`sub-progress-fill priority-fill-${pr.toLowerCase()}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <div className="dashboard-card-header">
+          <h3>Phân bổ công việc theo thành viên ({members.total})</h3>
+          <div className="activity-summary-tags">
+            <span className="activity-tag">💬 {activity.totalComments} bình luận</span>
+            <span className="activity-tag">📎 {activity.totalAttachments} tệp đính kèm</span>
+          </div>
+        </div>
+
+        <div className="table-responsive">
+          <table className="workload-table">
+            <thead>
+              <tr>
+                <th>Thành viên</th>
+                <th>Vai trò</th>
+                <th className="text-center">Được giao</th>
+                <th className="text-center">Đã xong</th>
+                <th className="text-center">Quá hạn</th>
+                <th className="text-right">Tỷ lệ hoàn thành</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.breakdown.map((m) => {
+                const completion = m.assignedTasks > 0
+                  ? Math.round((m.completedTasks / m.assignedTasks) * 100)
+                  : 0;
+                return (
+                  <tr key={m.userId}>
+                    <td>
+                      <div className="user-cell">
+                        <span className="avatar avatar-small">
+                          {(m.name || m.email).slice(0, 1).toUpperCase()}
+                        </span>
+                        <div>
+                          <strong>{m.name || m.email}</strong>
+                          {m.name && <span className="user-subtext">{m.email}</span>}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="role-pill">{roleLabels[m.role]}</span>
+                    </td>
+                    <td className="text-center font-semibold">{m.assignedTasks}</td>
+                    <td className="text-center text-success font-semibold">{m.completedTasks}</td>
+                    <td className="text-center">
+                      {m.overdueTasks > 0 ? (
+                        <span className="badge-danger">{m.overdueTasks}</span>
+                      ) : (
+                        <span className="muted">0</span>
+                      )}
+                    </td>
+                    <td className="text-right">
+                      <div className="member-progress-cell">
+                        <span className="member-percent-text">{m.assignedTasks > 0 ? `${completion}%` : '—'}</span>
+                        {m.assignedTasks > 0 && (
+                          <div className="mini-progress-bar">
+                            <div
+                              className="mini-progress-fill"
+                              style={{ width: `${completion}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   );
 }
 
