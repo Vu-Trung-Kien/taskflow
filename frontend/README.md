@@ -1,29 +1,55 @@
-# TaskFlow frontend
+# TaskFlow Frontend
 
-Frontend MVP built with React, TypeScript and Vite. It consumes the backend APIs already implemented for authentication, projects/members, tasks/subtasks, comments and attachments. Notifications/email, analytics dashboard, CSV export, recurring tasks and feature flags are intentionally deferred until corresponding backend APIs exist.
+Frontend MVP được xây dựng bằng React, TypeScript và Vite. Giao diện sử dụng
+backend API để đăng nhập, quản lý dự án/thành viên, task/sub-task, bình luận,
+tệp đính kèm, dashboard và xuất CSV.
 
-## Local development
+Thông báo trong ứng dụng/email, task lặp, feature flags và triển khai frontend
+production chưa nằm trong MVP.
 
-1. Start the API and its dependencies as described in the repository root README.
-2. From `frontend/`, install dependencies and start Vite:
+## Phát triển local
+
+1. Khởi chạy API và các dịch vụ phụ thuộc theo hướng dẫn trong
+   [README dự án](../README.md).
+2. Từ thư mục `frontend/`, cài đặt dependency và chạy Vite:
 
    ```bash
    npm ci
    npm run dev
    ```
 
-3. Open the Vite URL shown in the terminal. The development server proxies `/auth`, `/projects`, `/health` and `/version` to `http://localhost:3000`, keeping refresh cookies same-origin. Set `VITE_API_BASE_URL` only when the API is available at a compatible same-origin route.
+3. Mở URL Vite hiển thị trong terminal. Dev server proxy các route `/auth`,
+   `/projects`, `/health` và `/version` đến `http://localhost:3000`, giữ cookie
+   refresh cùng origin.
 
-## Authentication and deployment integration
+Chỉ đặt `VITE_API_BASE_URL` khi API có thể truy cập qua route cùng origin phù
+hợp.
 
-- The short-lived access token is held in memory only. Refresh tokens are handled by the backend's HttpOnly cookie; the browser client sends credentials for API requests.
-- Production should serve the frontend and reverse-proxy the backend routes (`/auth`, `/projects`, `/health`, `/version`) on the same origin. If using separate origins instead, the backend must explicitly allow the frontend origin with credentials and the refresh cookie's SameSite/Secure policy must match the deployment.
-- Attachment bytes are uploaded directly to the presigned S3-compatible URL. Configure bucket CORS to allow the frontend origin, `PUT`, and the signed `Content-Type` header. The frontend enforces the documented 10 MiB limit by API validation and provides the backend MIME allowlist as the file picker filter; server-side validation remains authoritative.
-- Collaboration UI does not count as a verified end-to-end storage integration until upload, completion, download and deletion have been tested against SeaweedFS or AWS S3.
+## Xác thực và tích hợp triển khai
 
-## Checks
+- Frontend giữ access token trong bộ nhớ; thời hạn access token là **15 phút**.
+- Refresh token được backend quản lý trong cookie HttpOnly và xoay vòng sau
+  mỗi lần sử dụng thành công. Phiên đăng nhập hết hạn tuyệt đối sau **30 ngày**;
+  refresh không gia hạn giới hạn này.
+- Trong production, nên phục vụ frontend và reverse-proxy các route backend
+  (`/auth`, `/projects`, `/health`, `/version`) trên cùng origin. Nếu tách
+  origin, cần cấu hình CORS có credentials và chính sách cookie tương thích.
+- Bytes tệp được tải trực tiếp từ trình duyệt lên presigned S3-compatible URL.
+  Cấu hình bucket CORS cho origin frontend, method `PUT` và header
+  `Content-Type` đã ký. Backend là nơi thực thi giới hạn kích thước **10 MiB**,
+  MIME allowlist và thời hạn presigned URL **5 phút**.
+- Mã giao diện tích hợp luồng attachment; việc xác minh end-to-end cần chạy
+  upload, complete, download và delete trên SeaweedFS hoặc Amazon S3 thực tế.
+
+## Kiểm tra
 
 ```bash
 npm test
 npm run build
 ```
+
+## Tài liệu liên quan
+
+- [Thiết kế kỹ thuật](../docs/TECHNICAL_DESIGN_DOCUMENT.md)
+- [Chức năng và luồng nghiệp vụ](../docs/business-overview.md)
+- [Yêu cầu sản phẩm](../docs/requirements.md)

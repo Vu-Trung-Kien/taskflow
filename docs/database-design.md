@@ -1,22 +1,24 @@
 # Thiết kế cơ sở dữ liệu TaskFlow
 
-- Trạng thái: Schema MVP có thêm `task_comments` và `attachments`; migration collaboration cần được áp dụng trên local và production qua quy trình release.
-- Database: PostgreSQL 16
-- ORM/migration: Prisma 7
+- Database: PostgreSQL 16.
+- ORM và migration: Prisma 7.
+- Schema MVP gồm `task_comments` và `attachments`; migration được áp dụng theo quy trình release.
 
-## ERD dự kiến
+## ERD MVP
 
 ```mermaid
 erDiagram
     USERS ||--o{ PROJECT_MEMBERS : joins
     PROJECTS ||--o{ PROJECT_MEMBERS : contains
+    USERS ||--o{ PROJECTS : creates
     PROJECTS ||--o{ TASKS : contains
+    USERS ||--o{ TASKS : creates
     USERS o|--o{ TASKS : assigned_to
     TASKS o|--o{ TASKS : parent_of
-    USERS ||--o{ COMMENTS : writes
-    TASKS ||--o{ COMMENTS : has
+    USERS ||--o{ TASK_COMMENTS : writes
+    TASKS ||--o{ TASK_COMMENTS : has
     TASKS ||--o{ ATTACHMENTS : has
-    USERS ||--o{ NOTIFICATIONS : receives
+    USERS ||--o{ ATTACHMENTS : uploads
     USERS ||--o{ AUTH_SESSIONS : opens
     AUTH_SESSIONS ||--o{ REFRESH_TOKENS : rotates
 
@@ -40,7 +42,7 @@ erDiagram
     PROJECT_MEMBERS {
         uuid project_id PK,FK
         uuid user_id PK,FK
-        text role
+        project_role role
         timestamptz joined_at
     }
     TASKS {
@@ -51,15 +53,16 @@ erDiagram
         uuid created_by FK
         text title
         text description
-        text status
-        text priority
+        task_status status
+        task_priority priority
         timestamptz due_at
         timestamptz deleted_at
         timestamptz created_at
         timestamptz updated_at
     }
-    COMMENTS {
+    TASK_COMMENTS {
         uuid id PK
+        uuid project_id FK
         uuid task_id FK
         uuid author_id FK
         text body
@@ -68,20 +71,14 @@ erDiagram
     }
     ATTACHMENTS {
         uuid id PK
+        uuid project_id FK
         uuid task_id FK
         uuid uploaded_by FK
         text object_key UK
         text file_name
         text content_type
-        bigint size_bytes
-        timestamptz created_at
-    }
-    NOTIFICATIONS {
-        uuid id PK
-        uuid recipient_id FK
-        text type
-        jsonb payload
-        timestamptz read_at
+        integer size_bytes
+        timestamptz uploaded_at
         timestamptz created_at
     }
     AUTH_SESSIONS {
@@ -100,13 +97,13 @@ erDiagram
     }
 ```
 
-## Mô hình cho mốc backend đầu tiên
+## Chi tiết mô hình dữ liệu MVP
 
 ### `users`
 
 - UUID primary key.
 - Email được trim và chuyển lowercase ở application boundary trước khi persist; unique constraint hiện tại ngăn trùng trên giá trị canonical. Không thêm PostgreSQL extension.
-- Lưu `password_hash`, không lưu mật khẩu; `display_name` và UTC timestamps.
+- Lưu `password_hash`, không lưu mật khẩu; `name` và UTC timestamps.
 - Tài khoản được tham chiếu bởi membership, task assignee/creator và các dữ liệu tương lai.
 
 ### `projects`
@@ -118,7 +115,7 @@ erDiagram
 ### `project_members`
 
 - Khóa ghép `(project_id, user_id)` để mỗi người chỉ có một membership trong một dự án.
-- `role` là enum Owner/Member/Viewer.
+- `role` là enum `OWNER`, `MEMBER`, `VIEWER`, tương ứng Owner, Member và Viewer.
 - Mỗi dự án có đúng một Owner hiện hành (đã duyệt); partial unique index được thêm bằng SQL trong migration vì Prisma không biểu diễn trực tiếp kiểu index này.
 - Không xóa Owner cuối cùng hoặc chuyển Owner nếu không có bước chuyển quyền trong cùng transaction.
 
@@ -129,7 +126,7 @@ erDiagram
 - `assignee_id` có thể null. Assignee bắt buộc phải là thành viên của cùng project; service phải xác minh và e2e test invariant này. Có thể bổ sung composite foreign key/trigger nếu cần bảo đảm ở tầng DB.
 - Sub-task phải cùng project với task cha và giới hạn một cấp (đã duyệt).
 - Index dự kiến: `(project_id, status)`, `(project_id, due_at)`, `(assignee_id, status)`, `(parent_task_id)`.
-- Task được soft-delete/khôi phục qua `deleted_at`; comments/attachments tương lai được giữ lại và không hiển thị khi task đã xóa.
+- Task được soft-delete/khôi phục qua `deleted_at`; bình luận và tệp đính kèm được giữ lại nhưng không hiển thị khi task đã xóa.
 
 ### `auth_sessions` và `refresh_tokens`
 
@@ -139,10 +136,10 @@ erDiagram
 - Logout thu hồi session; access-token guard kiểm tra session còn hoạt động nên logout có hiệu lực ngay với cả access JWT. Refresh token được gửi qua cookie `HttpOnly`, `SameSite=Lax`, `Secure` trong production; access token trả về response và client chỉ giữ trong bộ nhớ.
 - Email verification được hoãn; email chưa xác minh vẫn có thể đăng nhập trong MVP.
 
-## Collaboration
+## Bình luận và tệp đính kèm
 
 - `task_comments`: tham chiếu task bằng cặp `(project_id, task_id)` và tác giả; giới hạn 5.000 ký tự. Thành viên dự án được đọc; Owner/Member tạo; tác giả sửa/xóa bình luận của mình và Owner có thể sửa/xóa mọi bình luận.
-- `attachments`: chỉ lưu metadata, trạng thái hoàn tất và S3 object key; không lưu nội dung tệp trong PostgreSQL. API kiểm tra membership, task còn hoạt động, giới hạn 10 MiB và MIME allowlist trước khi cấp presigned upload URL; chỉ cấp download URL cho object đã xác nhận qua S3 `HeadObject`. URL có thời hạn 5 phút.
+- `attachments`: chỉ lưu metadata, trạng thái hoàn tất và S3 object key; không lưu nội dung tệp trong PostgreSQL. API kiểm tra membership, task còn hoạt động, giới hạn **10 MiB** và MIME allowlist trước khi cấp presigned upload URL; chỉ cấp download URL cho object đã xác nhận qua S3 `HeadObject`. URL có thời hạn **5 phút**.
 - S3 objects đặt dưới key ngẫu nhiên trong prefix project/task; API không dùng tên tệp do người dùng cung cấp làm key. Tệp được tải xuống với `Content-Disposition: attachment`.
 - Xóa task vẫn giữ comments/attachments trong database theo chính sách soft-delete hiện có; endpoint không hiển thị chúng khi task không còn hoạt động.
 
