@@ -2,6 +2,8 @@ import type {
   Attachment,
   AttachmentUploadPayload,
   Comment,
+  Notification,
+  NotificationListResponse,
   Project,
   ProjectMember,
   ProjectMetrics,
@@ -283,6 +285,22 @@ export const collaborationApi = {
   deleteAttachment(projectId: string, taskId: string, attachmentId: string) {
     return apiRequest<{ deleted: boolean }>(`/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}`, {
       method: 'DELETE',
+    });
+  },
+};
+
+export const notificationApi = {
+  list(limit = 50) {
+    return apiRequest<NotificationListResponse>(`/notifications?limit=${limit}`);
+  },
+  markAsRead(id: string) {
+    return apiRequest<Notification>(`/notifications/${id}/read`, {
+      method: 'PATCH',
+    });
+  },
+  markAllAsRead() {
+    return apiRequest<{ updatedCount: number }>('/notifications/read-all', {
+      method: 'POST',
     });
   },
 };

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
-import { ApiError, authApi, collaborationApi, projectApi, taskApi, uploadFile } from './api';
+import { ApiError, authApi, collaborationApi, notificationApi, projectApi, taskApi, uploadFile } from './api';
 import { useAuth } from './auth';
 import type {
   Attachment,
   Comment,
+  Notification,
   Project,
   ProjectMember,
   ProjectMetrics,
@@ -136,6 +137,154 @@ function AuthPage({ register = false }: { register?: boolean }) {
   );
 }
 
+function NotificationBell() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  async function fetchNotifications() {
+    try {
+      setLoading(true);
+      const res = await notificationApi.list(30);
+      setNotifications(res.notifications);
+      setUnreadCount(res.unreadCount);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void fetchNotifications();
+    const timer = setInterval(() => {
+      void fetchNotifications();
+    }, 20000);
+    return () => clearInterval(timer);
+  }, []);
+
+  async function markOneRead(id: string, e?: React.MouseEvent) {
+    e?.stopPropagation();
+    try {
+      await notificationApi.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch {
+      // ignore
+    }
+  }
+
+  async function markAllRead() {
+    try {
+      await notificationApi.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch {
+      // ignore
+    }
+  }
+
+  function handleNotificationClick(item: Notification) {
+    if (!item.isRead) {
+      void markOneRead(item.id);
+    }
+    setOpen(false);
+    if (item.data && typeof item.data.projectId === 'string') {
+      navigate(`/projects/${item.data.projectId}`);
+    }
+  }
+
+  return (
+    <div className="notification-bell-wrapper">
+      <button
+        type="button"
+        className="notification-bell-btn"
+        onClick={() => {
+          setOpen((prev) => !prev);
+          if (!open) void fetchNotifications();
+        }}
+        aria-label="Thông báo"
+        title="Thông báo"
+      >
+        <span className="bell-symbol" aria-hidden="true">🔔</span>
+        {unreadCount > 0 && (
+          <span className="notification-counter-badge">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="notification-popover" role="dialog" aria-label="Danh sách thông báo">
+          <div className="notification-popover-header">
+            <div>
+              <strong>Thông báo</strong>
+              {unreadCount > 0 && <span className="notification-pill-count">{unreadCount} mới</span>}
+            </div>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                className="button-link-small"
+                onClick={() => void markAllRead()}
+              >
+                Đọc tất cả
+              </button>
+            )}
+          </div>
+          <div className="notification-popover-body">
+            {loading && notifications.length === 0 && (
+              <div className="notification-empty-text">Đang tải thông báo...</div>
+            )}
+            {!loading && notifications.length === 0 && (
+              <div className="notification-empty-text">Không có thông báo mới nào.</div>
+            )}
+            {notifications.map((n) => (
+              <div
+                key={n.id}
+                className={`notification-row ${n.isRead ? 'read' : 'unread'}`}
+                onClick={() => handleNotificationClick(n)}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="notification-row-content">
+                  <div className="notification-row-title">
+                    {!n.isRead && <span className="unread-dot" />}
+                    <span>{n.title}</span>
+                  </div>
+                  <p className="notification-row-msg">{n.message}</p>
+                  <span className="notification-row-time">
+                    {new Date(n.createdAt).toLocaleDateString('vi-VN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      day: '2-digit',
+                      month: '2-digit',
+                    })}
+                  </span>
+                </div>
+                {!n.isRead && (
+                  <button
+                    type="button"
+                    className="notification-check-btn"
+                    onClick={(e) => void markOneRead(n.id, e)}
+                    title="Đánh dấu đã đọc"
+                    aria-label="Đánh dấu đã đọc"
+                  >
+                    ✓
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AppFrame({ children }: { children: React.ReactNode }) {
   const { user, signOut, sessionError } = useAuth();
   const navigate = useNavigate();
@@ -156,6 +305,7 @@ function AppFrame({ children }: { children: React.ReactNode }) {
       <header className="topbar">
         <Link to="/projects" className="brand"><span className="brand-mark">T</span> taskflow</Link>
         <div className="topbar-right">
+          <NotificationBell />
           <span className="avatar">{(user?.name ?? user?.email ?? 'U').slice(0, 1).toUpperCase()}</span>
           <span className="user-label">{user?.name || user?.email}</span>
           <button className="button button-quiet" onClick={() => void logout()}>Đăng xuất</button>
@@ -279,6 +429,7 @@ function WorkspacePage() {
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [tab, setTab] = useState<'tasks' | 'dashboard' | 'members'>('tasks');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -321,6 +472,25 @@ function WorkspacePage() {
       }
     } catch (requestError) {
       setError(messageOf(requestError));
+    }
+  }
+
+  async function handleKanbanDrop(taskId: string, targetStatus: TaskStatus) {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || task.status === targetStatus) return;
+
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t)),
+    );
+    if (selectedTask?.id === taskId) {
+      setSelectedTask((prev) => (prev ? { ...prev, status: targetStatus } : null));
+    }
+
+    try {
+      await taskApi.update(projectId, taskId, { status: targetStatus });
+    } catch (requestError) {
+      setError(messageOf(requestError));
+      await refreshTasks();
     }
   }
 
@@ -399,14 +569,34 @@ function WorkspacePage() {
           />
         )}
         {tab === 'tasks' && (
-          <section className="task-layout">
+          <section className={`task-layout ${viewMode === 'kanban' && !showDeleted ? 'task-layout-kanban' : ''}`}>
             <div className="task-column">
               <div className="task-toolbar">
                 <div>
                   <h2>{showDeleted ? 'Đã xóa' : 'Tất cả công việc'}</h2>
-                  <p className="muted">{showDeleted ? 'Khôi phục công việc đã xóa mềm.' : 'Theo dõi tiến độ của nhóm.'}</p>
+                  <p className="muted">{showDeleted ? 'Khôi phục công việc đã xóa mềm.' : 'Theo dõi tiến độ của nhóm và kéo-thả để đổi trạng thái.'}</p>
                 </div>
                 <div className="toolbar-controls">
+                  {!showDeleted && (
+                    <div className="view-mode-toggles" role="group" aria-label="Chế độ hiển thị">
+                      <button
+                        type="button"
+                        className={`view-mode-btn ${viewMode === 'kanban' ? 'active' : ''}`}
+                        onClick={() => setViewMode('kanban')}
+                        title="Bảng kéo-thả Kanban"
+                      >
+                        📊 Bảng kéo-thả
+                      </button>
+                      <button
+                        type="button"
+                        className={`view-mode-btn ${viewMode === 'list' ? 'active' : ''}`}
+                        onClick={() => setViewMode('list')}
+                        title="Danh sách hàng dọc"
+                      >
+                        📋 Danh sách
+                      </button>
+                    </div>
+                  )}
                   <select aria-label="Lọc trạng thái" value={status} onChange={(event) => setStatus(event.target.value)}>
                     <option value="">Mọi trạng thái</option>
                     {Object.entries(statusLabels).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
@@ -428,13 +618,30 @@ function WorkspacePage() {
                 </div>
               </div>
               {canEdit && !showDeleted && <TaskCreateForm projectId={projectId} members={members} onCreated={refreshTasks} />}
-              <div className="task-list">
-                {loading && <Loading label="Đang cập nhật công việc" />}
-                {!loading && tasks.length === 0 && <div className="empty-state"><span className="empty-icon">✓</span><strong>{showDeleted ? 'Thùng rác trống' : 'Chưa có công việc nào'}</strong><span>{showDeleted ? 'Các công việc đã xóa sẽ xuất hiện tại đây.' : 'Tạo công việc đầu tiên để bắt đầu.'}</span></div>}
-                {tasks.filter((task) => showDeleted || !task.parentTaskId).map((task) => (
-                  <TaskRow key={task.id} task={task} selected={selectedTask?.id === task.id} deleted={showDeleted} canEdit={canEdit} onSelect={() => setSelectedTask(task)} onChanged={refreshTasks} projectId={projectId} />
-                ))}
-              </div>
+              {loading && <Loading label="Đang cập nhật công việc" />}
+              {!loading && tasks.length === 0 && (
+                <div className="empty-state">
+                  <span className="empty-icon">✓</span>
+                  <strong>{showDeleted ? 'Thùng rác trống' : 'Chưa có công việc nào'}</strong>
+                  <span>{showDeleted ? 'Các công việc đã xóa sẽ xuất hiện tại đây.' : 'Tạo công việc đầu tiên để bắt đầu.'}</span>
+                </div>
+              )}
+              {!loading && tasks.length > 0 && viewMode === 'kanban' && !showDeleted && (
+                <KanbanBoard
+                  tasks={tasks.filter((task) => !task.parentTaskId)}
+                  canEdit={canEdit}
+                  selectedTaskId={selectedTask?.id}
+                  onSelectTask={setSelectedTask}
+                  onDropStatus={handleKanbanDrop}
+                />
+              )}
+              {!loading && (viewMode === 'list' || showDeleted) && (
+                <div className="task-list">
+                  {tasks.filter((task) => showDeleted || !task.parentTaskId).map((task) => (
+                    <TaskRow key={task.id} task={task} selected={selectedTask?.id === task.id} deleted={showDeleted} canEdit={canEdit} onSelect={() => setSelectedTask(task)} onChanged={refreshTasks} projectId={projectId} />
+                  ))}
+                </div>
+              )}
             </div>
             {selectedTask && !showDeleted && (
               <TaskPanel
@@ -877,6 +1084,156 @@ function TaskCreateForm({ projectId, members, onCreated }: { projectId: string; 
           <div className="button-row"><button className="button button-primary button-small" disabled={saving}>{saving ? 'Đang tạo...' : 'Lưu công việc'}</button><button type="button" className="button button-quiet button-small" onClick={() => { setExpanded(false); setError(''); }}>Hủy</button></div>
         </form>
       )}
+    </div>
+  );
+}
+
+const KANBAN_COLUMNS: Array<{
+  status: TaskStatus;
+  title: string;
+  icon: string;
+}> = [
+  { status: 'TODO', title: 'Cần làm', icon: '📝' },
+  { status: 'IN_PROGRESS', title: 'Đang làm', icon: '⚡' },
+  { status: 'DONE', title: 'Hoàn tất', icon: '✅' },
+  { status: 'BLOCKED', title: 'Bị chặn', icon: '⛔' },
+];
+
+function KanbanBoard({
+  tasks,
+  canEdit,
+  selectedTaskId,
+  onSelectTask,
+  onDropStatus,
+}: {
+  tasks: Task[];
+  canEdit: boolean;
+  selectedTaskId?: string;
+  onSelectTask: (task: Task) => void;
+  onDropStatus: (taskId: string, targetStatus: TaskStatus) => void;
+}) {
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [activeDropColumn, setActiveDropColumn] = useState<TaskStatus | null>(null);
+
+  return (
+    <div className="kanban-board-container">
+      <div className="kanban-grid">
+        {KANBAN_COLUMNS.map((column) => {
+          const columnTasks = tasks.filter((t) => t.status === column.status);
+          const isDragOver = activeDropColumn === column.status;
+
+          return (
+            <div
+              key={column.status}
+              className={`kanban-column kanban-column-${column.status.toLowerCase()} ${isDragOver ? 'kanban-column-drop-active' : ''}`}
+              onDragOver={(e) => {
+                if (!canEdit) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (activeDropColumn !== column.status) {
+                  setActiveDropColumn(column.status);
+                }
+              }}
+              onDragLeave={(e) => {
+                if (!canEdit) return;
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                setActiveDropColumn(null);
+              }}
+              onDrop={(e) => {
+                if (!canEdit) return;
+                e.preventDefault();
+                setActiveDropColumn(null);
+                const taskId = e.dataTransfer.getData('text/plain') || draggedId;
+                if (taskId) {
+                  onDropStatus(taskId, column.status);
+                }
+              }}
+            >
+              <div className="kanban-column-header">
+                <div className="kanban-column-title">
+                  <span className="kanban-column-icon" aria-hidden="true">{column.icon}</span>
+                  <h3>{column.title}</h3>
+                </div>
+                <span className="kanban-column-count">{columnTasks.length}</span>
+              </div>
+
+              <div className="kanban-card-list">
+                {columnTasks.length === 0 && (
+                  <div className={`kanban-column-empty ${isDragOver ? 'drag-hint' : ''}`}>
+                    {isDragOver ? 'Thả công việc vào đây' : 'Trống'}
+                  </div>
+                )}
+                {columnTasks.map((task) => {
+                  const isSelected = selectedTaskId === task.id;
+                  const isDragging = draggedId === task.id;
+                  const isOverdue = task.dueAt && new Date(task.dueAt) < new Date() && task.status !== 'DONE';
+
+                  return (
+                    <article
+                      key={task.id}
+                      className={`kanban-card ${isSelected ? 'kanban-card-selected' : ''} ${isDragging ? 'kanban-card-dragging' : ''}`}
+                      draggable={canEdit}
+                      onDragStart={(e) => {
+                        if (!canEdit) return;
+                        e.dataTransfer.setData('text/plain', task.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                        setDraggedId(task.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedId(null);
+                        setActiveDropColumn(null);
+                      }}
+                      onClick={() => onSelectTask(task)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="kanban-card-header">
+                        <span className={`priority priority-${task.priority.toLowerCase()}`}>
+                          {priorityLabels[task.priority]}
+                        </span>
+                        {canEdit && (
+                          <span className="kanban-drag-handle" title="Kéo để di chuyển giữa các cột" aria-hidden="true">
+                            ⠿
+                          </span>
+                        )}
+                      </div>
+
+                      <h4 className="kanban-card-title">{task.title}</h4>
+
+                      {task.description && (
+                        <p className="kanban-card-desc">{task.description}</p>
+                      )}
+
+                      <div className="kanban-card-footer">
+                        <div className="kanban-card-meta">
+                          {task.dueAt && (
+                            <span className={`kanban-due-badge ${isOverdue ? 'overdue' : ''}`}>
+                              📅 {new Date(task.dueAt).toLocaleDateString('vi-VN')}
+                            </span>
+                          )}
+                          {task.subTasks && task.subTasks.length > 0 && (
+                            <span className="kanban-subtasks-badge" title="Công việc con">
+                              ☑ {task.subTasks.filter((st) => st.status === 'DONE').length}/{task.subTasks.length}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          className="kanban-card-assignee"
+                          title={task.assignee?.name || task.assignee?.email || 'Chưa phân công'}
+                        >
+                          <span className="avatar avatar-small">
+                            {(task.assignee?.name ?? task.assignee?.email ?? '?').slice(0, 1).toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

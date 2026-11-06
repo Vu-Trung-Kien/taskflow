@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ProjectRole, Prisma, TaskPriority, TaskStatus } from '../generated/prisma/client';
+import { NotificationType } from '../generated/prisma/enums';
+import { NotificationService } from '../notifications/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectAccessService } from '../projects/project-access.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -17,6 +19,7 @@ export class TaskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: ProjectAccessService,
+    private readonly notifications: NotificationService,
   ) {}
 
   async list(projectId: string, userId: string, query: ListTasksDto) {
@@ -88,7 +91,7 @@ export class TaskService {
       await this.requireProjectAssignee(projectId, dto.assigneeId);
     }
 
-    return this.prisma.task.create({
+    const createdTask = await this.prisma.task.create({
       data: {
         projectId,
         createdById: userId,
@@ -104,6 +107,19 @@ export class TaskService {
         assignee: { select: { id: true, email: true, name: true } },
       },
     });
+
+    if (dto.assigneeId && dto.assigneeId !== userId) {
+      await this.notifications.createNotification({
+        userId: dto.assigneeId,
+        actorId: userId,
+        type: NotificationType.TASK_ASSIGNED,
+        title: 'Bạn được phân công công việc mới',
+        message: `Bạn đã được phân công vào công việc "${createdTask.title}".`,
+        data: { projectId, taskId: createdTask.id },
+      });
+    }
+
+    return createdTask;
   }
 
   async update(
@@ -119,7 +135,7 @@ export class TaskService {
     }
     const task = await this.prisma.task.findFirst({
       where: { id: taskId, projectId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, title: true, status: true, assigneeId: true, createdById: true },
     });
     if (!task) {
       throw new NotFoundException('Task not found.');
@@ -148,6 +164,38 @@ export class TaskService {
     if (updated.count !== 1) {
       throw new NotFoundException('Task not found.');
     }
+
+    if (dto.assigneeId && dto.assigneeId !== task.assigneeId && dto.assigneeId !== userId) {
+      await this.notifications.createNotification({
+        userId: dto.assigneeId,
+        actorId: userId,
+        type: NotificationType.TASK_ASSIGNED,
+        title: 'Bạn được phân công công việc',
+        message: `Bạn đã được phân công vào công việc "${dto.title ?? task.title}".`,
+        data: { projectId, taskId },
+      });
+    }
+
+    if (dto.status && dto.status !== task.status) {
+      const recipientIds = new Set<string>();
+      if (task.assigneeId && task.assigneeId !== userId) {
+        recipientIds.add(task.assigneeId);
+      }
+      if (task.createdById && task.createdById !== userId) {
+        recipientIds.add(task.createdById);
+      }
+      for (const recipientId of recipientIds) {
+        await this.notifications.createNotification({
+          userId: recipientId,
+          actorId: userId,
+          type: NotificationType.TASK_STATUS_CHANGED,
+          title: 'Trạng thái công việc thay đổi',
+          message: `Công việc "${task.title}" đã chuyển sang trạng thái "${dto.status}".`,
+          data: { projectId, taskId, status: dto.status },
+        });
+      }
+    }
+
     return this.get(projectId, taskId, userId);
   }
 

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { CollaborationModule } from './collaboration/collaboration.module';
 import { HealthModule } from './health/health.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -16,6 +17,7 @@ import { VersionModule } from './version/version.module';
     CollaborationModule,
     ProjectsModule,
     TasksModule,
+    NotificationsModule,
     HealthModule,
     VersionModule,
   ],

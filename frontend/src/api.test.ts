@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, apiRequest, projectApi, taskApi, setAccessToken } from './api';
+import { ApiError, apiRequest, notificationApi, projectApi, taskApi, setAccessToken } from './api';
 
 describe('apiRequest', () => {
   beforeEach(() => {
@@ -75,5 +75,26 @@ describe('apiRequest', () => {
     const blob = await taskApi.exportCsv('proj-123', { status: 'DONE' });
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.size).toBeGreaterThan(0);
+  });
+
+  it('fetches notifications list and unread count', async () => {
+    setAccessToken('access-token');
+    const mockData = { notifications: [{ id: 'n1', title: 'Task assigned' }], unreadCount: 1 };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(mockData), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+
+    const result = await notificationApi.list();
+    expect(result).toEqual(mockData);
+  });
+
+  it('marks a notification as read and marks all as read', async () => {
+    setAccessToken('access-token');
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'n1', isRead: true }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ updatedCount: 2 }), { status: 200 }));
+
+    await expect(notificationApi.markAsRead('n1')).resolves.toEqual({ id: 'n1', isRead: true });
+    await expect(notificationApi.markAllAsRead()).resolves.toEqual({ updatedCount: 2 });
   });
 });

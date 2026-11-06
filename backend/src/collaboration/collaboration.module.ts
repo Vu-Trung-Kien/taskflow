@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ProjectAccessService } from '../projects/project-access.service';
 import { ProjectsModule } from '../projects/projects.module';
@@ -8,7 +9,7 @@ import { CollaborationService } from './collaboration.service';
 import { S3StorageService } from './s3-storage.service';
 
 @Module({
-  imports: [AuthModule, PrismaModule, ProjectsModule],
+  imports: [AuthModule, PrismaModule, ProjectsModule, NotificationsModule],
   controllers: [CollaborationController],
   providers: [CollaborationService, ProjectAccessService, S3StorageService],
 })

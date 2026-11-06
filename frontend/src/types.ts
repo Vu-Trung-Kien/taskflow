@@ -105,3 +105,28 @@ export interface ProjectMetrics {
     totalAttachments: number;
   };
 }
+
+export type NotificationType =
+  | 'TASK_ASSIGNED'
+  | 'TASK_STATUS_CHANGED'
+  | 'TASK_COMMENT_CREATED'
+  | 'TASK_DUE_SOON';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  actorId: string | null;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data: Record<string, unknown> | null;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+  actor?: User | null;
+}
+
+export interface NotificationListResponse {
+  notifications: Notification[];
+  unreadCount: number;
+}

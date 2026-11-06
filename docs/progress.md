@@ -61,6 +61,8 @@ Tài liệu này ghi nhận toàn bộ quá trình phát triển dự án **Task
 | Bình luận và tệp đính kèm (API) | Hoàn tất mã nguồn & E2E API; tích hợp object storage thực tế và phát hành production chưa được xác minh | Local & CI Pipeline |
 | Dashboard Thống kê (Metrics API & UI) | Hoàn tất | Local & CI Pipeline |
 | Xuất dữ liệu CSV (CSV Export API & Download UI) | Hoàn tất | Local & CI Pipeline |
+| Hệ thống thông báo In-app (API & Bell Dropdown) | Hoàn tất | Local & CI Pipeline |
+| Bảng kéo-thả Kanban (Drag-and-Drop Board) | Hoàn tất | Local & CI Pipeline |
 | Frontend MVP (React 19 + TypeScript + Vite) | Hoàn tất mã nguồn | Local Dev Server |
 | Hạ tầng AWS Terraform cơ sở (EC2, S3, EBS, ECR, IAM OIDC) | Đã triển khai | AWS Account (`ap-southeast-1`) |
 | Pipeline CI/CD (GitHub Actions OIDC -> ECR -> SSM) | Đã kích hoạt | GitHub Actions |
@@ -68,7 +70,7 @@ Tài liệu này ghi nhận toàn bộ quá trình phát triển dự án **Task
 | Triển khai Frontend lên Production (S3/CloudFront hoặc Docker) | **Chưa triển khai** | Cần thiết lập |
 | Tự động sao lưu PostgreSQL lên S3 & Diễn tập khôi phục | **Chưa triển khai** | Cần thiết lập |
 | Giám sát hệ thống (Prometheus, Grafana, CloudWatch Alerts) | **Chưa triển khai** | Cần thiết lập |
-| Dịch vụ Email & Thông báo In-app | **Chưa triển khai** | Cần thiết lập |
+| Dịch vụ Email (SES / MailHog) | **Chưa triển khai** | Cần thiết lập |
 | Công việc lặp định kỳ (Recurring Tasks) | **Chưa triển khai** | Cần thiết lập |
 | Feature Flags & Quản trị hệ thống | **Chưa triển khai** | Cần thiết lập |
 
@@ -79,11 +81,11 @@ Tài liệu này ghi nhận toàn bộ quá trình phát triển dự án **Task
 Dưới đây là các hạng mục tồn đọng được phân loại theo từng nhóm chuyên môn và mức độ ưu tiên:
 
 ### 3.1. Tính năng Nghiệp vụ Cốt lõi
-1. **Hệ thống Thông báo (In-app Notifications):**
-   - Bổ sung bảng `notifications` trong Prisma schema và migration.
-   - Tạo API quản lý thông báo: `GET /notifications`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`.
-   - Tự động gửi thông báo khi: được phân công task, có bình luận mới trong task tham gia, trạng thái task thay đổi, task sắp tới hạn.
-   - Thêm biểu tượng chuông thông báo (Notification bell badge & dropdown) ở thanh điều hướng Frontend.
+1. **Hệ thống Thông báo (In-app Notifications) - [ĐÃ HOÀN TẤT]:**
+   - Bảng `notifications` trong Prisma schema và migration.
+   - API quản lý thông báo: `GET /notifications`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`.
+   - Tự động kích hoạt thông báo khi: được phân công task, có bình luận mới trong task tham gia, trạng thái task thay đổi.
+   - Biểu tượng chuông thông báo (Notification bell badge & dropdown) ở thanh điều hướng Frontend.
 2. **Dịch vụ Email (SES / MailHog):**
    - Triển khai email service kết nối SMTP MailHog khi chạy local và AWS SES khi triển khai production.
    - Gửi email thông báo khi được gán việc quan trọng hoặc nhắc nhở trước hạn hoàn thành.
@@ -99,8 +101,11 @@ Dưới đây là các hạng mục tồn đọng được phân loại theo t�
    - Cập nhật thông tin tài khoản (tên hiển thị, avatar).
 
 ### 3.2. Nâng cấp Giao diện & Trải nghiệm Người dùng (Frontend)
-1. **Tách module mã nguồn:** Tái cấu trúc file `App.tsx` (hiện dài hơn 800 dòng) thành các thư mục chuẩn: `components/`, `pages/`, `hooks/`, `context/`.
-2. **Bảng kéo thả Kanban Board:** Bổ sung giao diện Kanban với các cột trạng thái để người dùng kéo thả task trực quan.
+1. **Bảng kéo thả Kanban Board - [ĐÃ HOÀN TẤT]:**
+   - Bổ sung giao diện Kanban với 4 cột trạng thái (`TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`).
+   - Hỗ trợ kéo thả card công việc mượt mà và cập nhật trạng thái trực quan tức thì.
+   - Chuyển đổi linh hoạt giữa chế độ danh sách và bảng kéo-thả Kanban.
+2. **Tách module mã nguồn:** Tái cấu trúc file `App.tsx` thành các thư mục chuẩn: `components/`, `pages/`, `hooks/`, `context/`.
 3. **Tìm kiếm & Bộ lọc nâng cao:**
    - Thanh tìm kiếm từ khóa theo tiêu đề và nội dung task.
    - Bộ lọc theo người thực hiện, khoảng ngày hết hạn, task quá hạn.
