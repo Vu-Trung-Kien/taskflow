@@ -134,7 +134,8 @@ Các yêu cầu sau chưa được triển khai:
 
 ## 7. Tài liệu liên quan
 
-- [Chức năng và luồng nghiệp vụ](business-overview.md)
-- [Thiết kế kỹ thuật](TECHNICAL_DESIGN_DOCUMENT.md)
-- [Thiết kế cơ sở dữ liệu](database-design.md)
-- [Báo cáo tiến độ và lộ trình](progress.md)
+- [Chức năng và luồng nghiệp vụ](product-overview.md)
+- [Thiết kế kỹ thuật](../architecture/system-design.md)
+- [Thiết kế cơ sở dữ liệu](../architecture/database.md)
+- [Trạng thái hệ thống](../STATE.md)
+- [Báo cáo tiến độ & lộ trình](../project/progress.md)

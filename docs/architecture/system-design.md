@@ -59,7 +59,7 @@ flowchart LR
 - `attachments`: metadata tệp, object key và thời điểm upload hoàn tất; bytes
   không được lưu trong PostgreSQL.
 
-Quan hệ và chi tiết cột được mô tả trong [thiết kế cơ sở dữ liệu](database-design.md).
+Quan hệ và chi tiết cột được mô tả trong [thiết kế cơ sở dữ liệu](database.md).
 Thông báo, quy tắc lặp và feature flags là các khả năng tương lai, không phải
 bảng/chức năng đã có trong MVP.
 
@@ -79,7 +79,7 @@ bảng/chức năng đã có trong MVP.
 Mọi API nghiệp vụ phải kiểm tra membership trên đúng project ID. Việc biết
 UUID không cấp quyền truy cập. Dự án đã archive chỉ đọc; Viewer không được
 thay đổi task. Quyền chi tiết được quy định trong
-[yêu cầu sản phẩm](requirements.md).
+[yêu cầu sản phẩm](../overview/requirements.md).
 
 ### 4.2. Task
 
@@ -126,7 +126,7 @@ thay đổi task. Quyền chi tiết được quy định trong
 - API export trả CSV UTF-8 có BOM để tăng khả năng tương thích với phần mềm
   bảng tính.
 - Hai chức năng này có trong mã nguồn hiện tại; cần xem trạng thái triển khai
-  tại [báo cáo tiến độ](progress.md).
+  tại [trạng thái hệ thống](../STATE.md).
 
 ## 6. API và xử lý lỗi
 
@@ -139,7 +139,7 @@ thay đổi task. Quyền chi tiết được quy định trong
 - API trả lỗi HTTP phù hợp khi không xác thực, không có quyền, dữ liệu sai
   hoặc tài nguyên không tồn tại.
 
-Các endpoint chính được liệt kê trong [README gốc](../README.md).
+Các endpoint chính được liệt kê trong [README gốc](../../README.md).
 
 ## 7. Môi trường và phát hành
 
@@ -162,8 +162,8 @@ Các endpoint chính được liệt kê trong [README gốc](../README.md).
 - Frontend production, domain/HTTPS, backup/restore đã diễn tập và monitoring/
   cảnh báo vẫn là hạng mục cần hoàn thiện.
 
-Chi tiết thao tác nằm trong [tài liệu triển khai](../deploy/README.md) và
-[tài liệu Terraform](../infra/terraform/README.md).
+Chi tiết thao tác nằm trong [tài liệu triển khai](../../deploy/README.md) và
+[tài liệu Terraform](../../infra/terraform/README.md).
 
 ## 8. Các ràng buộc bảo mật
 
@@ -177,8 +177,9 @@ Chi tiết thao tác nằm trong [tài liệu triển khai](../deploy/README.md)
 
 ## 9. Tài liệu liên quan
 
-- [README dự án](../README.md)
-- [Yêu cầu sản phẩm](requirements.md)
-- [Chức năng và luồng nghiệp vụ](business-overview.md)
-- [Thiết kế cơ sở dữ liệu](database-design.md)
-- [Báo cáo tiến độ và lộ trình](progress.md)
+- [README dự án](../../README.md)
+- [Yêu cầu sản phẩm](../overview/requirements.md)
+- [Chức năng và luồng nghiệp vụ](../overview/product-overview.md)
+- [Thiết kế cơ sở dữ liệu](database.md)
+- [Trạng thái hệ thống](../STATE.md)
+- [Báo cáo tiến độ & lộ trình](../project/progress.md)

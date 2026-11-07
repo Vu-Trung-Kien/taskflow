@@ -119,7 +119,7 @@ giao diện, nhưng tích hợp lưu trữ thực tế cần được xác minh 
 SeaweedFS hoặc Amazon S3.
 
 Xem [yêu cầu sản phẩm](requirements.md) để biết phạm vi và quy tắc chi tiết,
-[thiết kế kỹ thuật](TECHNICAL_DESIGN_DOCUMENT.md) để xem kiến trúc và các
+[thiết kế kỹ thuật](../architecture/system-design.md) để xem kiến trúc và các
 quyết định kỹ thuật,
-[báo cáo tiến độ](progress.md) để xem trạng thái phát triển, và
-[README gốc](../README.md) để biết cách chạy dự án.
+[trạng thái hệ thống](../STATE.md) để xem trạng thái phát triển, và
+[README gốc](../../README.md) để biết cách chạy dự án.

@@ -160,4 +160,4 @@ erDiagram
 
 ## Trước các migration tiếp theo
 
-Các quyết định còn mở được liệt kê trong [yêu cầu sản phẩm](./requirements.md). Ma trận quyền cơ sở, một Owner, bộ trạng thái/ưu tiên, sub-task một cấp, archive dự án, soft-delete task, collaboration và chính sách access/refresh token đã được duyệt. Migration `application_core` và `auth_sessions` đã được áp dụng theo release trước; migration collaboration cần được áp dụng qua quy trình release. Không sửa migration cũ hoặc reset volume. Mọi thay đổi tiếp theo phải đi qua migration mới theo hướng mở rộng/an toàn dữ liệu.
+Các quyết định còn mở được liệt kê trong [yêu cầu sản phẩm](../overview/requirements.md). Ma trận quyền cơ sở, một Owner, bộ trạng thái/ưu tiên, sub-task một cấp, archive dự án, soft-delete task, collaboration và chính sách access/refresh token đã được duyệt. Migration `application_core` và `auth_sessions` đã được áp dụng theo release trước; migration collaboration cần được áp dụng qua quy trình release. Không sửa migration cũ hoặc reset volume. Mọi thay đổi tiếp theo phải đi qua migration mới theo hướng mở rộng/an toàn dữ liệu.

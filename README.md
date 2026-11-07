@@ -81,9 +81,9 @@ Các endpoint nghiệp vụ cần header `Authorization: Bearer <access-token>`,
 - `/projects/:projectId/tasks/:taskId/attachments` — Owner/Member upload/download qua presigned URL; giới hạn 10 MiB, MIME allowlist, URL 5 phút.
 - `GET /health/live`, `GET /health/ready`, `GET /version`
 
-Chi tiết chức năng, luồng và kiến trúc được ghi trong [tài liệu chức năng](docs/business-overview.md),
-[yêu cầu sản phẩm](docs/requirements.md), [thiết kế kỹ thuật](docs/TECHNICAL_DESIGN_DOCUMENT.md)
-và [thiết kế cơ sở dữ liệu](docs/database-design.md).
+Chi tiết chức năng, luồng và kiến trúc được ghi trong [tài liệu chức năng](docs/overview/product-overview.md),
+[yêu cầu sản phẩm](docs/overview/requirements.md), [thiết kế kỹ thuật](docs/architecture/system-design.md)
+và [thiết kế cơ sở dữ liệu](docs/architecture/database.md).
 
 ## Kiểm thử và build backend
 
@@ -117,11 +117,13 @@ Không lưu secret vào Git, Terraform variables/state, GitHub variables hoặc 
 
 ## Tài liệu
 
-- [Chức năng chính và luồng nghiệp vụ](docs/business-overview.md)
-- [Thiết kế kỹ thuật](docs/TECHNICAL_DESIGN_DOCUMENT.md)
-- [Báo cáo tiến độ và Lộ trình hoàn thiện](docs/progress.md)
-- [Yêu cầu sản phẩm](docs/requirements.md)
-- [Thiết kế cơ sở dữ liệu](docs/database-design.md)
+- [Mục lục tài liệu](docs/README.md)
+- [Trạng thái hệ thống](docs/STATE.md)
+- [Báo cáo tiến độ và Lịch sử phát triển](docs/project/progress.md)
+- [Chức năng chính và luồng nghiệp vụ](docs/overview/product-overview.md)
+- [Yêu cầu sản phẩm](docs/overview/requirements.md)
+- [Thiết kế kỹ thuật](docs/architecture/system-design.md)
+- [Thiết kế cơ sở dữ liệu](docs/architecture/database.md)
 - [Triển khai production](deploy/README.md)
 - [Khởi tạo Terraform state](infra/bootstrap/README.md)
 - [Nền tảng AWS bằng Terraform](infra/terraform/README.md)

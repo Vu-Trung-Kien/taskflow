@@ -62,7 +62,8 @@ Không sửa migration đã phát hành và không reset dữ liệu production.
 ## Tài liệu
 
 - [README dự án](../README.md)
-- [Thiết kế kỹ thuật](../docs/TECHNICAL_DESIGN_DOCUMENT.md)
-- [Yêu cầu sản phẩm](../docs/requirements.md)
-- [Thiết kế cơ sở dữ liệu](../docs/database-design.md)
+- [Mục lục tài liệu](../docs/README.md)
+- [Thiết kế kỹ thuật](../docs/architecture/system-design.md)
+- [Yêu cầu sản phẩm](../docs/overview/requirements.md)
+- [Thiết kế cơ sở dữ liệu](../docs/architecture/database.md)
 - [Hướng dẫn triển khai production](../deploy/README.md)

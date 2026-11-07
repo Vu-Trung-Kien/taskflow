@@ -50,6 +50,7 @@ npm run build
 
 ## Tài liệu liên quan
 
-- [Thiết kế kỹ thuật](../docs/TECHNICAL_DESIGN_DOCUMENT.md)
-- [Chức năng và luồng nghiệp vụ](../docs/business-overview.md)
-- [Yêu cầu sản phẩm](../docs/requirements.md)
+- [Mục lục tài liệu](../docs/README.md)
+- [Thiết kế kỹ thuật](../docs/architecture/system-design.md)
+- [Chức năng và luồng nghiệp vụ](../docs/overview/product-overview.md)
+- [Yêu cầu sản phẩm](../docs/overview/requirements.md)
