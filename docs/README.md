@@ -32,21 +32,25 @@ docs/
 ### 2.2. Kiến trúc Hệ thống (`architecture/`)
 - [**Thiết kế Kiến trúc Tổng thể**](architecture/system-design.md): Sơ đồ tầng hệ thống, tương tác giữa Client - API - Database - Object Storage, luồng dữ liệu và quyết định kỹ thuật cốt lõi.
 - [**Thiết kế Cơ sở Dữ liệu**](architecture/database.md): Mô hình ERD, định nghĩa bảng, quan hệ khóa ngoại, index hiệu năng và cascade rules (PostgreSQL 16 & Prisma 7).
+- [**Đặc tả Các Luồng Hoạt động Trọng yếu**](architecture/flows.md): Chi tiết 5 luồng cốt lõi (Auth rotation, Task & Notifications, Kanban drag-drop, Presigned S3 upload, CI/CD SSM release) kèm Sequence Diagram Mermaid.
+- [**Quyết định Kiến trúc (ADR)**](architecture/decisions.md): Ghi nhận các quyết định kiến trúc then chốt (ADR-001: Frontend Production Caddy; ADR-002: Đơn máy chủ EC2 + Postgres trên EBS gp3).
 - *Kiến trúc An toàn Thông tin* (`architecture/security.md`): *(Đang hoàn thiện)* Băm Argon2id, SHA-256 hash refresh token, chống replay attack, presigned URL policy và quản lý secret qua AWS SSM.
 
 ### 2.3. Chi tiết Module Nghiệp vụ (`modules/`)
-- *Module Xác thực & Phiên* (`modules/auth.md`): *(Đang hoàn thiện)* Đăng ký, đăng nhập, xoay vòng Refresh token, thu hồi phiên và thời hạn tuyệt đối 30 ngày.
-- *Module Dự án & Phân quyền* (`modules/projects.md`): *(Đang hoàn thiện)* Vòng đời dự án, phân quyền RBAC (`OWNER`, `MEMBER`, `VIEWER`), chuyển quyền sở hữu.
-- *Module Công việc & Kanban* (`modules/tasks.md`): *(Đang hoàn thiện)* Quản lý task, sub-task 1 cấp, soft-delete, cơ chế kéo-thả Kanban và xuất CSV UTF-8 kèm BOM.
-- *Module Cộng tác & Đính kèm Tệp* (`modules/collaboration.md`): *(Đang hoàn thiện)* Bình luận công việc và luồng upload/download tệp đính kèm qua S3 Presigned URL + xác nhận HeadObject.
-- *Module Thông báo In-app* (`modules/notifications.md`): *(Đang hoàn thiện)* Kích hoạt thông báo theo sự kiện, API đọc/đánh dấu đã đọc và giao diện chuông trên frontend.
+- [**Module Xác thực & Phiên**](modules/auth.md): Đăng ký, đăng nhập, xoay vòng Refresh token SHA-256, thu hồi phiên do replay attack và thời hạn tuyệt đối 30 ngày.
+- [**Module Dự án & Phân quyền**](modules/projects.md): Vòng đời dự án, phân quyền RBAC (`OWNER`, `MEMBER`, `VIEWER`), chuyển quyền sở hữu nguyên tử và Dashboard metrics.
+- [**Module Công việc & Kanban**](modules/tasks.md): Quản lý task, sub-task 1 cấp, soft-delete, cơ chế kéo-thả Kanban và xuất CSV UTF-8 kèm BOM.
+- [**Module Cộng tác & Đính kèm Tệp**](modules/collaboration.md): Bình luận công việc và luồng upload/download tệp đính kèm qua S3 Presigned URL + xác nhận HeadObject.
+- [**Module Thông báo In-app**](modules/notifications.md): Kích hoạt thông báo theo sự kiện, API đọc/đánh dấu đã đọc và giao diện chuông trên frontend.
+- [**Module Giám sát Trạng thái & Phiên bản**](modules/health-and-telemetry.md): Probe liveness, readiness kiểm tra kết nối database và endpoint metadata Git SHA / build time.
 
 ### 2.4. Giao diện Lập trình Ứng dụng (`api/`)
-- *Đặc tả REST API* (`api/reference.md`): *(Đang hoàn thiện)* Danh mục toàn bộ API endpoints, DTOs, headers, mẫu request/response và mã lỗi HTTP.
+- [**Đặc tả REST API**](api/reference.md): Bảng danh mục toàn bộ API endpoints (method, path, quyền, input, output, mã lỗi HTTP) đối chiếu từ controller thật.
 
 ### 2.5. Phát triển & Kiểm thử (`development/`)
-- *Hướng dẫn Môi trường Local* (`development/local-setup.md`): *(Đang hoàn thiện)* Khởi chạy Docker Compose (PostgreSQL, SeaweedFS, MailHog), Prisma migrations và Vite dev proxy.
-- *Quy chuẩn Kiểm thử & Code Quality* (`development/testing-guide.md`): *(Đang hoàn thiện)* Kiểm thử Jest unit/e2e backend, Vitest frontend, Oxlint và TypeScript typecheck.
+- [**Hướng dẫn Môi trường Local**](development/local-setup.md): Khởi chạy Docker Compose (PostgreSQL, SeaweedFS, MailHog), Prisma migrations và Vite dev proxy.
+- [**Quy chuẩn Kiểm thử & Code Quality**](development/testing-guide.md): Kiểm thử Jest unit/e2e backend, Vitest frontend, Oxlint và TypeScript typecheck.
+- [**Quy ước Lập trình & Checklists**](development/conventions.md): Quy ước TypeScript strict, validation DTO, checklist thêm tính năng mới và checklist PR có migration (mô hình Expand/Contract).
 
 ### 2.6. Vận hành & Hạ tầng (`operations/`)
 - *Quy trình Triển khai Production* (`operations/deployment.md`): *(Đang hoàn thiện)* Pipeline CI/CD GitHub Actions, phát hành qua AWS SSM Run Command, kế hoạch triển khai Frontend static build + reverse proxy Caddy `[CHƯA LÀM]`.
@@ -57,8 +61,8 @@ docs/
 
 ### 2.7. Quản lý Dự án (`project/`)
 - [**Báo cáo Tiến độ & Lịch sử Phát triển**](project/progress.md): Chi tiết các mốc phát triển theo tuần, ma trận trạng thái hệ thống và lộ trình hoàn thiện.
-- *Lộ trình Hoàn thiện* (`project/roadmap.md`): *(Đang hoàn thiện)* Kế hoạch các tính năng tiếp theo: Dịch vụ Email SES/MailHog `[CHƯA LÀM]`, Recurring Tasks `[CHƯA LÀM]`, Frontend Caddy `[CHƯA LÀM]`, Tự động backup DB.
-- *Vấn đề Tồn đọng & Nợ Kỹ thuật* (`project/known-issues.md`): *(Đang hoàn thiện)* Bảng đối chiếu các điểm lệch giữa mã nguồn, migration và tài liệu; các hạng mục tối ưu hóa mã nguồn.
+- [**Lộ trình Phát triển**](project/roadmap.md): Kế hoạch các tính năng tiếp theo: Dịch vụ Email SES/MailHog `[CHƯA LÀM]`, Recurring Tasks `[CHƯA LÀM]`, Frontend Caddy `[CHƯA LÀM]`, Tự động backup DB.
+- [**Vấn đề Tồn đọng & Điểm lệch Kỹ thuật**](project/known-issues.md): Bảng đối chiếu các điểm lệch giữa mã nguồn, migration và tài liệu; các hạng mục tối ưu hóa mã nguồn.
 
 ---
 
