@@ -1,6 +1,6 @@
 # Yêu cầu TaskFlow
 
-- Trạng thái: Bản nháp; mặc định về vai trò, trạng thái, ưu tiên và xóa đã được duyệt
+- Trạng thái: Bản nháp; mặc định về vai trò, trạng thái, ưu tiên, xóa và attachment đã được duyệt
 - Phạm vi tài liệu: Nền tảng sản phẩm và mốc backend-first đầu tiên
 
 ## Mục tiêu
@@ -53,9 +53,17 @@ Mốc đầu tiên tập trung vào API, database và authorization; chưa bao g
 ## Các quyết định còn cần chốt
 
 - Quy tắc email verification (được hoãn đến khi production email sẵn sàng).
-- Phạm vi, độ sâu và chu kỳ tạo công việc lặp; cách xử lý tháng không có ngày tương ứng.
-- Dung lượng/kích thước tệp tối đa, định dạng được phép và thời hạn presigned URL.
-- Múi giờ dùng cho hạn hoàn thành/lặp định kỳ và chính sách lưu trữ/xóa dữ liệu người dùng.
+- Domain/DNS production để có thể cấp chứng chỉ HTTPS công khai.
+- Chính sách lưu trữ/xóa dữ liệu người dùng.
+
+## Mặc định mới đã duyệt
+
+- Bình luận được đọc bởi mọi thành viên dự án; Owner/Member tạo bình luận. Tác giả có thể sửa/xóa bình luận của mình; Owner có thể sửa/xóa bình luận của thành viên.
+- Owner/Member được yêu cầu upload, hoàn tất upload, download và xóa tệp của mình; Owner có thể xóa tệp của thành viên. Tệp lưu riêng tư trong S3 và chỉ trao đổi bằng presigned URL.
+- Tệp tối đa 10 MiB; MIME type dùng allowlist cấu hình; presigned URL hết hạn sau 5 phút.
+- Lịch lặp dùng UTC; ngày tháng không tồn tại ở một tháng được chuyển về ngày cuối tháng đó.
+- Email production gửi bằng AWS SES; phát triển local gửi qua MailHog.
+- Feature flags lưu trong database và thay đổi có hiệu lực runtime; quyền quản lý flag toàn hệ thống không được cấp cho thành viên dự án thông thường.
 
 ## Mặc định đã duyệt
 
