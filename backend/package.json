@@ -65,5 +65,9 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.2"
+  },
+  "overrides": {
+    "body-parser": "^2.4.0",
+    "multer": "^2.5.0"
   }
 }
