@@ -267,7 +267,7 @@ describe('Projects and tasks (e2e)', () => {
     await request(app.getHttpServer())
       .get(`/projects/${projectId}/metrics`)
       .set('Authorization', bearer(outsider.accessToken))
-      .expect(403);
+      .expect(404);
 
     const metricsResponse = await request(app.getHttpServer())
       .get(`/projects/${projectId}/metrics`)
@@ -329,7 +329,7 @@ describe('Projects and tasks (e2e)', () => {
     await request(app.getHttpServer())
       .get(`/projects/${projectId}/tasks/export`)
       .set('Authorization', bearer(outsider.accessToken))
-      .expect(403);
+      .expect(404);
 
     const exportResponse = await request(app.getHttpServer())
       .get(`/projects/${projectId}/tasks/export`)
