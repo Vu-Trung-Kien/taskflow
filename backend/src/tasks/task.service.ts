@@ -5,7 +5,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ProjectRole, Prisma } from '../generated/prisma/client';
+import { ProjectRole, Prisma, TaskPriority, TaskStatus } from '../generated/prisma/client';
+import { NotificationType } from '../generated/prisma/enums';
+import { NotificationService } from '../notifications/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectAccessService } from '../projects/project-access.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -17,6 +19,7 @@ export class TaskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: ProjectAccessService,
+    private readonly notifications: NotificationService,
   ) {}
 
   async list(projectId: string, userId: string, query: ListTasksDto) {
@@ -88,7 +91,7 @@ export class TaskService {
       await this.requireProjectAssignee(projectId, dto.assigneeId);
     }
 
-    return this.prisma.task.create({
+    const createdTask = await this.prisma.task.create({
       data: {
         projectId,
         createdById: userId,
@@ -104,6 +107,19 @@ export class TaskService {
         assignee: { select: { id: true, email: true, name: true } },
       },
     });
+
+    if (dto.assigneeId && dto.assigneeId !== userId) {
+      await this.notifications.createNotification({
+        userId: dto.assigneeId,
+        actorId: userId,
+        type: NotificationType.TASK_ASSIGNED,
+        title: 'Bạn được phân công công việc mới',
+        message: `Bạn đã được phân công vào công việc "${createdTask.title}".`,
+        data: { projectId, taskId: createdTask.id },
+      });
+    }
+
+    return createdTask;
   }
 
   async update(
@@ -119,7 +135,7 @@ export class TaskService {
     }
     const task = await this.prisma.task.findFirst({
       where: { id: taskId, projectId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, title: true, status: true, assigneeId: true, createdById: true },
     });
     if (!task) {
       throw new NotFoundException('Task not found.');
@@ -148,6 +164,38 @@ export class TaskService {
     if (updated.count !== 1) {
       throw new NotFoundException('Task not found.');
     }
+
+    if (dto.assigneeId && dto.assigneeId !== task.assigneeId && dto.assigneeId !== userId) {
+      await this.notifications.createNotification({
+        userId: dto.assigneeId,
+        actorId: userId,
+        type: NotificationType.TASK_ASSIGNED,
+        title: 'Bạn được phân công công việc',
+        message: `Bạn đã được phân công vào công việc "${dto.title ?? task.title}".`,
+        data: { projectId, taskId },
+      });
+    }
+
+    if (dto.status && dto.status !== task.status) {
+      const recipientIds = new Set<string>();
+      if (task.assigneeId && task.assigneeId !== userId) {
+        recipientIds.add(task.assigneeId);
+      }
+      if (task.createdById && task.createdById !== userId) {
+        recipientIds.add(task.createdById);
+      }
+      for (const recipientId of recipientIds) {
+        await this.notifications.createNotification({
+          userId: recipientId,
+          actorId: userId,
+          type: NotificationType.TASK_STATUS_CHANGED,
+          title: 'Trạng thái công việc thay đổi',
+          message: `Công việc "${task.title}" đã chuyển sang trạng thái "${dto.status}".`,
+          data: { projectId, taskId, status: dto.status },
+        });
+      }
+    }
+
     return this.get(projectId, taskId, userId);
   }
 
@@ -208,6 +256,93 @@ export class TaskService {
         assignee: { select: { id: true, email: true, name: true } },
       },
     });
+  }
+
+  async exportCsv(
+    projectId: string,
+    userId: string,
+    query: ListTasksDto,
+  ): Promise<string> {
+    await this.access.requireMembership(projectId, userId);
+    const includeDeleted = query.includeDeleted === 'true';
+
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        projectId,
+        deletedAt: includeDeleted ? { not: null } : null,
+        status: query.status,
+        priority: query.priority,
+      },
+      include: {
+        assignee: { select: { id: true, email: true, name: true } },
+        createdBy: { select: { id: true, email: true, name: true } },
+        parentTask: { select: { id: true, title: true } },
+      },
+      orderBy: [{ dueAt: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    const statusLabels: Record<TaskStatus, string> = {
+      [TaskStatus.TODO]: 'Cần làm',
+      [TaskStatus.IN_PROGRESS]: 'Đang làm',
+      [TaskStatus.DONE]: 'Hoàn tất',
+      [TaskStatus.BLOCKED]: 'Bị chặn',
+    };
+
+    const priorityLabels: Record<TaskPriority, string> = {
+      [TaskPriority.LOW]: 'Thấp',
+      [TaskPriority.MEDIUM]: 'Trung bình',
+      [TaskPriority.HIGH]: 'Cao',
+      [TaskPriority.URGENT]: 'Khẩn cấp',
+    };
+
+    const headers = [
+      'Mã công việc',
+      'Tiêu đề',
+      'Mô tả',
+      'Trạng thái',
+      'Mức độ ưu tiên',
+      'Người thực hiện',
+      'Email người thực hiện',
+      'Người tạo',
+      'Công việc cha',
+      'Hạn hoàn thành (UTC)',
+      'Ngày tạo (UTC)',
+      'Ngày cập nhật (UTC)',
+    ];
+
+    const escapeCsv = (
+      value: string | number | boolean | null | undefined,
+    ): string => {
+      if (value === null || value === undefined) return '';
+      const stringValue = String(value);
+      if (
+        stringValue.includes(',') ||
+        stringValue.includes('"') ||
+        stringValue.includes('\n') ||
+        stringValue.includes('\r')
+      ) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    const rows = tasks.map((task) => [
+      escapeCsv(task.id),
+      escapeCsv(task.title),
+      escapeCsv(task.description ?? ''),
+      escapeCsv(statusLabels[task.status] ?? task.status),
+      escapeCsv(priorityLabels[task.priority] ?? task.priority),
+      escapeCsv(task.assignee?.name || task.assignee?.email || 'Chưa gán'),
+      escapeCsv(task.assignee?.email ?? ''),
+      escapeCsv(task.createdBy.name || task.createdBy.email),
+      escapeCsv(task.parentTask?.title ?? ''),
+      escapeCsv(task.dueAt ? task.dueAt.toISOString() : ''),
+      escapeCsv(task.createdAt.toISOString()),
+      escapeCsv(task.updatedAt.toISOString()),
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
+    return `\uFEFF${csvContent}`;
   }
 
   private async requireProjectAssignee(

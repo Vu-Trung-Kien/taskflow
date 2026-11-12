@@ -1,173 +1,69 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Logo Nest" /></a>
-</p>
+# TaskFlow Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API của TaskFlow được xây dựng bằng NestJS, TypeScript, Prisma 7 và
+PostgreSQL 16.
 
-  <p align="center">Framework <a href="http://nodejs.org" target="_blank">Node.js</a> tiến bộ, hỗ trợ xây dựng ứng dụng phía máy chủ hiệu quả và có khả năng mở rộng.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="Phiên bản NPM" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Giấy phép package" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="Lượt tải NPM" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Cộng đồng Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Ủng hộ qua PayPal"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Ủng hộ dự án"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Theo dõi Nest trên Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Chức năng
 
-## Mô tả
+- Đăng ký, đăng nhập, duy trì phiên và đăng xuất.
+- Quản lý dự án, membership, vai trò Owner/Member/Viewer và chuyển quyền Owner.
+- Quản lý task/sub-task, bình luận và tệp đính kèm.
+- Cung cấp dashboard metrics, xuất CSV, health check và thông tin build.
 
-Repository khởi đầu cho framework TypeScript [Nest](https://github.com/nestjs/nest).
+Các giá trị task dùng thống nhất: trạng thái `TODO`, `IN_PROGRESS`, `DONE`,
+`BLOCKED`; mức ưu tiên `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
 
-## Thiết lập dự án
+## Cấu hình môi trường
 
-```bash
-$ npm install
-```
+Khi chạy backend trực tiếp, sao chép `.env.example` thành `.env`, cấu hình
+`DATABASE_URL` trỏ đến PostgreSQL local và đặt `JWT_ACCESS_SECRET` ngẫu nhiên
+dài ít nhất 32 byte. Không dùng secret mẫu trong production.
 
-Khi chạy API trực tiếp, sao chép `.env.example` thành `.env`, đặt `DATABASE_URL`
-trỏ tới môi trường local và tạo `JWT_ACCESS_SECRET` ngẫu nhiên dài ít nhất 32
-byte. Không dùng giá trị mẫu làm secret production.
+Local Compose cung cấp PostgreSQL, SeaweedFS S3 API và MailHog. Cấu hình S3
+gồm `S3_BUCKET`, `S3_REGION`, các endpoint cần thiết cho local và
+`S3_ALLOWED_CONTENT_TYPES`. Backend giới hạn mỗi tệp ở **10 MiB** và
+presigned URL có hiệu lực **5 phút**.
 
-## API nghiệp vụ hiện có
+Access JWT hết hạn sau **15 phút**. Refresh token được xoay vòng sau mỗi lần
+sử dụng thành công; mỗi auth session có thời hạn tuyệt đối **30 ngày** kể từ
+khi tạo. Refresh không kéo dài thời hạn session.
 
-Mọi endpoint dưới đây, ngoại trừ đăng ký/đăng nhập/refresh/logout và health/version,
-đều yêu cầu `Authorization: Bearer <access-token>`.
-
-- `POST /auth/register`, `POST /auth/login`: đăng ký/đăng nhập; trả access JWT 15
-  phút và đặt refresh token trong cookie HttpOnly.
-- `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`: xoay/thu hồi phiên
-  refresh có giới hạn tuyệt đối 30 ngày và xem hồ sơ hiện tại. Logout thu hồi cả
-  access JWT gắn với phiên ngay lập tức.
-- `/projects`: CRUD dự án bằng archive/restore; Owner quản lý thành viên và có
-  thể chuyển quyền Owner.
-- `/projects/:projectId/tasks`: CRUD task/sub-task; Owner/Member được ghi,
-  Viewer chỉ đọc. Xóa task là soft-delete; task có thể được lọc/khôi phục.
-- `/health/live`, `/health/ready`, `/version`: kiểm tra vận hành.
-
-Email verification, frontend, bình luận, upload S3, notifications, recurrence,
-dashboard, CSV và feature flags chưa được triển khai.
-
-## Biên dịch và chạy dự án
+## Chạy và kiểm thử
 
 ```bash
-# môi trường phát triển
-$ npm run start
-
-# chế độ theo dõi thay đổi
-$ npm run start:dev
-
-# môi trường production
-$ npm run start:prod
+npm ci
+npm run db:generate
+npm run start:dev
 ```
 
-## Chạy kiểm thử
+Chạy các kiểm tra backend từ thư mục này:
 
 ```bash
-# kiểm thử unit
-$ npm run test
-
-# kiểm thử e2e
-$ npm run test:e2e
-
-# độ bao phủ kiểm thử
-$ npm run test:cov
+npm run lint
+npm run typecheck
+npm test -- --runInBand
+npm run test:e2e -- --runInBand
+npm run build
 ```
 
-## Triển khai
+E2E test cần PostgreSQL local và `DATABASE_URL` trỏ đến database kiểm thử.
 
-Khi sẵn sàng triển khai ứng dụng NestJS lên production, hãy tham khảo
-[tài liệu triển khai](https://docs.nestjs.com/deployment) để biết các bước giúp
-ứng dụng vận hành hiệu quả.
+## Migration
 
-Nếu cần nền tảng cloud để triển khai ứng dụng NestJS, có thể tham khảo
-[Mau](https://mau.nestjs.com), nền tảng chính thức để triển khai NestJS trên
-AWS. Mau đơn giản hóa quy trình triển khai:
+Tạo/cập nhật migration trong môi trường phát triển bằng:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run db:migrate:dev
 ```
 
-Với Mau, bạn có thể triển khai ứng dụng chỉ sau vài thao tác và tập trung vào
-xây dựng tính năng thay vì quản lý hạ tầng.
+Quy trình deploy production áp dụng migration bằng `prisma migrate deploy`.
+Không sửa migration đã phát hành và không reset dữ liệu production.
 
-## Observability (khả năng quan sát)
+## Tài liệu
 
-Với ứng dụng production, observability giúp hiểu cách hệ thống hoạt động, phát
-hiện sớm sự cố và duy trì hiệu năng ổn định.
-
-[NestJS Observe](https://observe.nestjs.com) tự động instrument ứng dụng
-NestJS, cung cấp khả năng quan sát hệ thống với ít bước cấu hình:
-
-- **Distributed tracing:** Theo dõi request qua nhiều service và hiểu luồng xử
-  lý trong hệ thống.
-- **Phân tích waterfall:** Trực quan hóa quá trình xử lý request để tìm thao
-  tác chậm, nút thắt và độ trễ bất thường.
-- **Phân tích hiệu năng:** Phân tích hiệu năng ứng dụng theo thời gian thực và
-  nhanh chóng xác định khu vực cần tối ưu.
-- **Metrics:** Theo dõi các chỉ số quan trọng của ứng dụng và hạ tầng để nắm
-  tình trạng hệ thống cũng như xu hướng hiệu năng.
-- **Logging:** Tập trung log và liên kết log với trace cùng telemetry khác để
-  hỗ trợ gỡ lỗi.
-- **Theo dõi lỗi:** Phát hiện lỗi nhanh và điều tra nguyên nhân cùng ngữ cảnh
-  liên quan.
-- **Giám sát SLA:** Theo dõi mục tiêu mức dịch vụ và nhận biết khi ứng dụng
-  sắp chạm hoặc vượt ngưỡng đã đặt.
-- **Cảnh báo:** Thiết lập cảnh báo cho lỗi nghiêm trọng, suy giảm hiệu năng,
-  vi phạm SLA và bất thường khác để nhóm xử lý kịp thời.
-
-Để thêm vào dự án:
-
-```bash
-$ npm install @nestjs/observe
-```
-
-Sau đó làm theo [hướng dẫn thiết lập](https://docs.nestjs.com/observability/overview);
-cần thêm một import và app key.
-
-Gói miễn phí không yêu cầu thông tin thanh toán và hỗ trợ 300.000 event mỗi
-tháng. Bạn cũng có thể xem trước [bản demo trực tiếp](https://www.observe-demo.nestjs.com/dashboard);
-không cần cài đặt gì.
-
-## Tài nguyên
-
-Một số tài nguyên hữu ích khi làm việc với NestJS:
-
-- Tìm hiểu thêm về framework qua [tài liệu NestJS](https://docs.nestjs.com).
-- Đặt câu hỏi và nhận hỗ trợ tại [kênh Discord](https://discord.gg/G7Qnnhy).
-- Xem các [khóa học video chính thức](https://courses.nestjs.com/) để tìm hiểu
-  sâu hơn và thực hành.
-- Triển khai ứng dụng lên AWS chỉ với vài thao tác thông qua
-  [NestJS Mau](https://mau.nestjs.com).
-- Tự động instrument ứng dụng với [NestJS Observe](https://observe.nestjs.com)
-  để đơn giản hóa distributed tracing, metrics và logging; đồng thời theo dõi
-  lỗi và hiệu năng ứng dụng NestJS.
-- Trực quan hóa đồ thị ứng dụng và tương tác với ứng dụng NestJS theo thời gian
-  thực bằng [NestJS Devtools](https://devtools.nestjs.com).
-- Nếu cần hỗ trợ cho dự án (bán thời gian hoặc toàn thời gian), tham khảo
-  [dịch vụ hỗ trợ doanh nghiệp](https://enterprise.nestjs.com).
-- Theo dõi [X](https://x.com/nestframework) và
-  [LinkedIn](https://linkedin.com/company/nestjs) để cập nhật tin mới.
-- Tìm việc hoặc đăng tuyển tại [bảng việc làm chính thức](https://jobs.nestjs.com).
-
-## Hỗ trợ
-
-Dự án mã nguồn mở Nest sử dụng giấy phép MIT và phát triển nhờ các nhà tài trợ
-cùng những người ủng hộ. Nếu muốn tham gia, hãy [xem thêm tại đây](https://docs.nestjs.com/support).
-
-## Liên hệ
-
-- Tác giả: [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Trang web: [https://nestjs.com](https://nestjs.com/)
-- Twitter: [@nestframework](https://twitter.com/nestframework)
-
-## Giấy phép
-
-Nest sử dụng [giấy phép MIT](https://github.com/nestjs/nest/blob/master/LICENSE).
+- [README dự án](../README.md)
+- [Mục lục tài liệu](../docs/README.md)
+- [Thiết kế kỹ thuật](../docs/architecture/system-design.md)
+- [Yêu cầu sản phẩm](../docs/overview/requirements.md)
+- [Thiết kế cơ sở dữ liệu](../docs/architecture/database.md)
+- [Hướng dẫn triển khai production](../deploy/README.md)

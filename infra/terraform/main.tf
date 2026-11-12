@@ -132,6 +132,13 @@ data "aws_iam_policy_document" "ec2_runtime" {
   }
 
   statement {
+    sid       = "DeleteTaskflowAttachments"
+    effect    = "Allow"
+    actions   = ["s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.attachments.arn}/*"]
+  }
+
+  statement {
     sid       = "ListPostgresBackups"
     effect    = "Allow"
     actions   = ["s3:ListBucket"]
@@ -307,6 +314,16 @@ resource "aws_s3_bucket" "attachments" {
   tags = {
     Project = var.project_name
     Purpose = "attachments"
+  }
+}
+
+resource "aws_ssm_parameter" "attachments_bucket" {
+  name  = "/${var.project_name}/production/attachments-bucket"
+  type  = "String"
+  value = aws_s3_bucket.attachments.bucket
+
+  tags = {
+    Project = var.project_name
   }
 }
 

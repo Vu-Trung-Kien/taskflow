@@ -9,8 +9,10 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import type { AuthenticatedRequest } from '../auth/access-token.guard';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -39,6 +41,26 @@ export class TaskController {
     @Body() dto: CreateTaskDto,
   ) {
     return this.tasks.create(projectId, request.user.id, dto);
+  }
+
+  @Get('export')
+  async exportCsv(
+    @Req() request: AuthenticatedRequest,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Query() query: ListTasksDto,
+    @Res() response: Response,
+  ) {
+    const csvContent = await this.tasks.exportCsv(
+      projectId,
+      request.user.id,
+      query,
+    );
+    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="tasks-${projectId}-${Date.now()}.csv"`,
+    );
+    response.send(csvContent);
   }
 
   @Get(':taskId')
