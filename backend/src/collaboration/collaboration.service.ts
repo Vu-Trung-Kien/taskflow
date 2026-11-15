@@ -7,7 +7,8 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
-import { ProjectRole } from '../generated/prisma/enums';
+import { NotificationType, ProjectRole } from '../generated/prisma/enums';
+import { NotificationService } from '../notifications/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectAccessService } from '../projects/project-access.service';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
@@ -32,6 +33,7 @@ export class CollaborationService {
     private readonly prisma: PrismaService,
     private readonly access: ProjectAccessService,
     private readonly storage: S3StorageService,
+    private readonly notifications: NotificationService,
     config: ConfigService,
   ) {
     const configuredTypes = config.get<string>('S3_ALLOWED_CONTENT_TYPES');
@@ -68,12 +70,38 @@ export class CollaborationService {
     dto: CreateCommentDto,
   ) {
     await this.requireTask(projectId, taskId, userId, true);
-    return this.prisma.taskComment.create({
+    const comment = await this.prisma.taskComment.create({
       data: { projectId, taskId, authorId: userId, body: dto.body },
       include: {
         author: { select: { id: true, name: true, email: true } },
       },
     });
+
+    const task = await this.prisma.task.findFirst({
+      where: { id: taskId, projectId },
+      select: { title: true, assigneeId: true, createdById: true },
+    });
+    if (task) {
+      const recipientIds = new Set<string>();
+      if (task.assigneeId && task.assigneeId !== userId) {
+        recipientIds.add(task.assigneeId);
+      }
+      if (task.createdById && task.createdById !== userId) {
+        recipientIds.add(task.createdById);
+      }
+      for (const recipientId of recipientIds) {
+        await this.notifications.createNotification({
+          userId: recipientId,
+          actorId: userId,
+          type: NotificationType.TASK_COMMENT_CREATED,
+          title: 'Bình luận mới trên công việc',
+          message: `${comment.author.name || comment.author.email} đã bình luận trên "${task.title}": "${comment.body.slice(0, 80)}${comment.body.length > 80 ? '...' : ''}"`,
+          data: { projectId, taskId, commentId: comment.id },
+        });
+      }
+    }
+
+    return comment;
   }
 
   async updateComment(

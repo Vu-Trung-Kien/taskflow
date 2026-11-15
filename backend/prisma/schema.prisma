@@ -34,6 +34,15 @@ enum TaskPriority {
   @@map("task_priority")
 }
 
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_STATUS_CHANGED
+  TASK_COMMENT_CREATED
+  TASK_DUE_SOON
+
+  @@map("notification_type")
+}
+
 // Email addresses are canonicalized to lowercase by the application before persistence.
 // This keeps the existing unique constraint and avoids requiring a PostgreSQL extension.
 model User {
@@ -51,6 +60,8 @@ model User {
   comments       TaskComment[]
   attachments    Attachment[]
   authSessions   AuthSession[]
+  notifications          Notification[] @relation("UserNotifications")
+  triggeredNotifications Notification[] @relation("ActorNotifications")
 
   @@map("users")
 }
@@ -180,3 +191,23 @@ model RefreshToken {
   @@index([sessionId, revokedAt])
   @@map("refresh_tokens")
 }
+
+model Notification {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  actorId   String?          @map("actor_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(255)
+  message   String           @db.Text
+  data      Json?
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user  User  @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
