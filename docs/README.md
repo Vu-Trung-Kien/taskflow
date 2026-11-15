@@ -33,8 +33,9 @@ docs/
 - [**Thiết kế Kiến trúc Tổng thể**](architecture/system-design.md): Sơ đồ tầng hệ thống, tương tác giữa Client - API - Database - Object Storage, luồng dữ liệu và quyết định kỹ thuật cốt lõi.
 - [**Thiết kế Cơ sở Dữ liệu**](architecture/database.md): Mô hình ERD, định nghĩa bảng, quan hệ khóa ngoại, index hiệu năng và cascade rules (PostgreSQL 16 & Prisma 7).
 - [**Đặc tả Các Luồng Hoạt động Trọng yếu**](architecture/flows.md): Chi tiết 5 luồng cốt lõi (Auth rotation, Task & Notifications, Kanban drag-drop, Presigned S3 upload, CI/CD SSM release) kèm Sequence Diagram Mermaid.
+- [**Sơ đồ Luồng Điều hướng UI/UX**](architecture/ui-ux-navigation-flow.md): Sơ đồ luồng người dùng (User Journey Flow), cấu trúc màn hình, quan hệ Route ↔ Component và ma trận phân quyền RBAC.
 - [**Quyết định Kiến trúc (ADR)**](architecture/decisions.md): Ghi nhận các quyết định kiến trúc then chốt (ADR-001: Frontend Production Caddy; ADR-002: Đơn máy chủ EC2 + Postgres trên EBS gp3).
-- *Kiến trúc An toàn Thông tin* (`architecture/security.md`): *(Đang hoàn thiện)* Băm Argon2id, SHA-256 hash refresh token, chống replay attack, presigned URL policy và quản lý secret qua AWS SSM.
+- [**Kiến trúc An toàn Thông tin**](architecture/security.md): Băm Argon2id, SHA-256 hash refresh token, chống replay attack, presigned URL policy và quản lý secret qua AWS SSM.
 
 ### 2.3. Chi tiết Module Nghiệp vụ (`modules/`)
 - [**Module Xác thực & Phiên**](modules/auth.md): Đăng ký, đăng nhập, xoay vòng Refresh token SHA-256, thu hồi phiên do replay attack và thời hạn tuyệt đối 30 ngày.
@@ -53,8 +54,8 @@ docs/
 - [**Quy ước Lập trình & Checklists**](development/conventions.md): Quy ước TypeScript strict, validation DTO, checklist thêm tính năng mới và checklist PR có migration (mô hình Expand/Contract).
 
 ### 2.6. Vận hành & Hạ tầng (`operations/`)
-- *Quy trình Triển khai Production* (`operations/deployment.md`): *(Đang hoàn thiện)* Pipeline CI/CD GitHub Actions, phát hành qua AWS SSM Run Command, kế hoạch triển khai Frontend static build + reverse proxy Caddy `[CHƯA LÀM]`.
-- *Tổng quan Hạ tầng AWS* (`operations/aws-infrastructure.md`): *(Đang hoàn thiện)* Tổng hợp tài nguyên Terraform (VPC, EC2, EBS mã hóa, S3, ECR, IAM OIDC).
+- [**Quy trình Triển khai Production**](operations/deployment.md): Pipeline CI/CD GitHub Actions, phát hành qua AWS SSM Run Command, cơ chế rollback ứng dụng và kế hoạch triển khai Frontend static build + reverse proxy Caddy `[CHƯA LÀM]`.
+- [**Tổng quan Hạ tầng AWS**](operations/aws-infrastructure.md): Tổng hợp 26 tài nguyên Terraform (VPC, EC2 t3.small, EBS mã hóa, S3 attachments/backups, ECR, IAM OIDC, Parameter Store).
 - [Hướng dẫn Triển khai Chi tiết](../deploy/README.md): Quy trình SSM Run Command và các tham số Parameter Store production.
 - [Thiết lập Hạ tầng AWS bằng Terraform](../infra/terraform/README.md): Cấu hình mã nguồn Terraform cho production.
 - [Khởi tạo Terraform State Bootstrap](../infra/bootstrap/README.md): Khởi tạo S3 bucket và DynamoDB lock table cho Terraform state.

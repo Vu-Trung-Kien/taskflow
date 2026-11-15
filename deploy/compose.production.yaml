@@ -20,6 +20,11 @@ services:
       timeout: 3s
       retries: 12
       start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   migrator:
     image: ${ECR_REPOSITORY:?ECR_REPOSITORY is required}:${IMAGE_TAG:?IMAGE_TAG is required}-migrator
@@ -29,6 +34,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   api:
     image: ${ECR_REPOSITORY:?ECR_REPOSITORY is required}:${IMAGE_TAG:?IMAGE_TAG is required}
@@ -46,3 +56,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e 'fetch(\"http://127.0.0.1:3000/health/ready\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))'",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
