@@ -18,20 +18,30 @@ Tài liệu này ghi nhận các vấn đề tồn đọng, nợ kỹ thuật (t
 ## 2. Nợ kỹ thuật Module Thông báo (Notifications)
 
 ### 2.1. Chưa có kênh thông báo thời gian thực (Real-time Push)
-- **Hiện trạng xác minh**: `backend/src/notifications/notification.controller.ts` cung cấp REST API (`GET /notifications`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`). Giao diện frontend tại `frontend/src/App.tsx` chỉ cập nhật dữ liệu khi người dùng mở dropdown hoặc tải lại trang.
-- **Hạn chế**: Chưa có kết nối WebSocket (NestJS WebSockets Gateway) hoặc Server-Sent Events (SSE) để cập nhật tức thời khi có thông báo mới mà không cần thao tác reload.
+- **Hiện trạng xác minh**: `backend/src/notifications/notification.controller.ts` cung cấp REST API (`GET /notifications`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`). Giao diện frontend tại `NotificationBell.tsx` sử dụng cơ chế polling định kỳ 20 giây.
+- **Hạn chế**: Chưa có kết nối WebSocket (NestJS WebSockets Gateway) hoặc Server-Sent Events (SSE) để cập nhật tức thời khi có thông báo mới mà không cần polling.
 
 ---
 
 ## 3. Nợ kỹ thuật Frontend & Giao diện Kanban
 
-### 3.1. File `App.tsx` đóng vai trò Monolith Component
-- **Hiện trạng xác minh**: Tệp `frontend/src/App.tsx` có quy mô hơn 1.200 dòng, tích hợp toàn bộ router, auth state, project workspace, modal task, modal bình luận, tệp đính kèm, chuông thông báo và bảng kéo-thả Kanban.
-- **Rủi ro**: Khó mở rộng, khó bảo trì và dễ gây re-render không mong muốn.
-- **Hướng xử lý**: Tái cấu trúc phân tách thành các thư mục chuẩn: `components/kanban/`, `components/notifications/`, `components/tasks/`, `pages/`, `hooks/`.
+### 3.1. File `App.tsx` đóng vai trò Monolith Component — [ĐÃ GIẢI QUYẾT]
+- **Hiện trạng**: Toàn bộ tệp `frontend/src/App.tsx` cũ (1.505 dòng) đã được tái cấu trúc triệt để thành cấu trúc component module hóa chuẩn SaaS:
+  - `src/components/icons.tsx`: Thư viện icon Lucide SVG chuẩn hóa.
+  - `src/components/ui/`: Các thành phần nguyên tử dùng lại (`Button`, `Avatar`, `Badge`, `Modal`, `ConfirmModal`, `EmptyState`).
+  - `src/components/layout/`: `AppLayout`, `Sidebar`, `TopBar`.
+  - `src/components/notifications/`: `NotificationBell`.
+  - `src/components/projects/`: `ProjectCard`, `CreateProjectModal`.
+  - `src/components/workspace/`: `ProjectHeader`, `WorkspaceTabs`.
+  - `src/components/tasks/`: `KanbanBoard`, `TaskRow`, `TaskCreateForm`, `TaskDetailsPanel`.
+  - `src/components/dashboard/`: `DashboardPanel`.
+  - `src/components/members/`: `MembersPanel`.
+  - `src/pages/`: `AuthPage`, `ProjectsPage`, `WorkspacePage`.
+  - `src/App.tsx`: Rút gọn còn 65 dòng, chỉ đảm nhiệm routing và route guards.
+- **Kết quả**: Mã nguồn sạch, dễ bảo trì, re-render tối ưu, bộ test `redesign.test.tsx` đạt 100% pass.
 
 ### 3.2. Bảng Kanban chưa hỗ trợ sắp xếp thứ tự tùy ý trong cùng một cột
-- **Hiện trạng xác minh**: Giao diện Kanban tại `frontend/src/App.tsx` hỗ trợ kéo-thả thẻ công việc giữa 4 cột trạng thái (`TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`) và gọi `api.updateTask` để đổi trạng thái. Tuy nhiên, bảng `tasks` trong database không có cột `position` hay `order_index`.
+- **Hiện trạng xác minh**: Giao diện Kanban hỗ trợ kéo-thả thẻ công việc giữa 4 cột trạng thái (`TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`) và gọi `api.updateTask` để đổi trạng thái. Tuy nhiên, bảng `tasks` trong database không có cột `position` hay `order_index`.
 - **Hạn chế**: Thứ tự các card trong một cột phụ thuộc hoàn toàn vào sắp xếp thời gian tạo (`createdAt desc`), người dùng không thể kéo đổi vị trí ưu tiên giữa các task trong cùng một cột.
 
 ---
@@ -49,16 +59,29 @@ Tài liệu này ghi nhận các vấn đề tồn đọng, nợ kỹ thuật (t
 ### 5.1. Thiếu Rate Limiting trên các endpoint nhạy cảm
 - **Hiện trạng xác minh**: Backend NestJS chưa cài đặt `@nestjs/throttler`. Các route xác thực như `POST /auth/login` và `POST /auth/register` chưa có cơ chế hạn chế tần suất gọi, tiềm ẩn rủi ro brute-force mật khẩu.
 
-
 ---
 
 ## 6. Cấu hình Container Môi trường Production (`deploy/compose.production.yaml`)
 
-### 6.1. Thiếu cấu hình Giới hạn dung lượng Log (Log Rotation)
-- **Hiện trạng xác minh**: Trong `deploy/compose.production.yaml`, cả 3 service (`postgres`, `migrator`, `api`) đều không khai báo khối `logging` (như `driver: "json-file"`, `options: { max-size: "10m", max-file: "3" }`).
-- **Rủi ro**: Docker mặc định ghi log không giới hạn dung lượng ra ổ đĩa root của máy chủ EC2. Khi hệ thống hoạt động liên tục trong thời gian dài, file log container có thể làm đầy dung lượng ổ đĩa, gây treo máy chủ.
-- **Hướng xử lý**: Bổ sung cấu hình `logging` kèm giới hạn `max-size` và `max-file` cho từng service trong `deploy/compose.production.yaml`.
+### 6.1. Thiếu cấu hình Giới hạn dung lượng Log (Log Rotation) — [ĐÃ GIẢI QUYẾT]
+- **Giải pháp thực hiện**: Đã bổ sung khối cấu hình `logging` chuẩn Docker cho toàn bộ 3 service (`postgres`, `migrator`, `api`) trong `deploy/compose.production.yaml`:
+  ```yaml
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+  ```
+- **Kết quả**: Ngăn chặn hoàn toàn rủi ro tràn dung lượng ổ đĩa EC2 do log container không giới hạn.
 
-### 6.2. Container API chưa có cấu hình Healthcheck của Docker
-- **Hiện trạng xác minh**: Service `postgres` có `healthcheck` đầy đủ (`pg_isready`), nhưng service `api` trong `deploy/compose.production.yaml` hoàn toàn chưa có khối `healthcheck`. Mặc dù script `deploy/deploy-release.sh` có kiểm tra `curl -f http://127.0.0.1:3000/health/ready` một lần duy nhất tại thời điểm triển khai, Docker daemon không thể tự phát hiện nếu tiến trình API bị treo (deadlock/unresponsive) tại runtime sau đó để tự động khởi động lại.
-- **Hướng xử lý**: Bổ sung `healthcheck` cho service `api` sử dụng `curl` hoặc `node` gọi tới `/health/ready`.
+### 6.2. Container API chưa có cấu hình Healthcheck của Docker — [ĐÃ GIẢI QUYẾT]
+- **Giải pháp thực hiện**: Đã bổ sung cấu hình `healthcheck` cho service `api` trong `deploy/compose.production.yaml`:
+  ```yaml
+  healthcheck:
+    test: ["CMD-SHELL", "node -e 'fetch(\"http://127.0.0.1:3000/health/ready\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))'"]
+    interval: 10s
+    timeout: 3s
+    retries: 3
+    start_period: 15s
+  ```
+- **Kết quả**: Docker daemon có thể chủ động theo dõi và tự động phục hồi container `api` khi tiến trình gặp lỗi hoặc mất kết nối database tại runtime.
