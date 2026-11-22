@@ -116,19 +116,25 @@ export function WorkspacePage() {
     }
   }
 
-  async function handleKanbanDrop(taskId: string, targetStatus: TaskStatus) {
+  async function handleKanbanDrop(taskId: string, targetStatus: TaskStatus, targetPosition?: number) {
     const task = tasks.find((t) => t.id === taskId);
-    if (!task || task.status === targetStatus) return;
+    if (!task) return;
+    if (task.status === targetStatus && targetPosition !== undefined && task.position === targetPosition) return;
+
+    const newPosition = targetPosition ?? task.position;
 
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t)),
+      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus, position: newPosition } : t)),
     );
     if (selectedTask?.id === taskId) {
-      setSelectedTask((prev) => (prev ? { ...prev, status: targetStatus } : null));
+      setSelectedTask((prev) => (prev ? { ...prev, status: targetStatus, position: newPosition } : null));
     }
 
     try {
-      await taskApi.update(projectId, taskId, { status: targetStatus });
+      await taskApi.update(projectId, taskId, {
+        status: targetStatus,
+        ...(targetPosition !== undefined ? { position: targetPosition } : {}),
+      });
     } catch (requestError) {
       setError(messageOf(requestError));
       await refreshTasks();

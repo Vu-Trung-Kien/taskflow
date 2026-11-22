@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -8,8 +9,10 @@ import { Prisma } from '../generated/prisma/client';
 import { randomBytes, createHash } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 const SESSION_TTL_MILLISECONDS = 30 * 24 * 60 * 60 * 1000;
@@ -188,6 +191,72 @@ export class AuthService {
       throw new UnauthorizedException('Account is no longer available.');
     }
     return user;
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<AuthUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Account is no longer available.');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: dto.name !== undefined ? (dto.name ? dto.name.trim() : null) : undefined,
+      },
+      select: { id: true, email: true, name: true },
+    });
+
+    return updatedUser;
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+    currentSessionId?: string,
+  ): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Account is no longer available.');
+    }
+
+    const currentMatches = await argon2.verify(user.passwordHash, dto.currentPassword);
+    if (!currentMatches) {
+      throw new UnauthorizedException('Current password is incorrect.');
+    }
+
+    const isSamePassword = await argon2.verify(user.passwordHash, dto.newPassword);
+    if (isSamePassword) {
+      throw new BadRequestException('New password must be different from current password.');
+    }
+
+    const newPasswordHash = await argon2.hash(dto.newPassword, {
+      type: argon2.argon2id,
+    });
+
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.user.update({
+        where: { id: userId },
+        data: { passwordHash: newPasswordHash },
+      });
+
+      await transaction.authSession.updateMany({
+        where: {
+          userId,
+          ...(currentSessionId ? { id: { not: currentSessionId } } : {}),
+          revokedAt: null,
+        },
+        data: { revokedAt: new Date() },
+      });
+    });
+
+    return { message: 'Mật khẩu đã được thay đổi thành công.' };
   }
 
   private async startSession(user: AuthUser): Promise<AuthResult> {

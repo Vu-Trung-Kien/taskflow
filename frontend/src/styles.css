@@ -2357,6 +2357,14 @@ ul, ol {
   cursor: grabbing;
 }
 
+.tf-kanban-card.drop-before {
+  border-top: 2px solid var(--color-primary);
+}
+
+.tf-kanban-card.drop-after {
+  border-bottom: 2px solid var(--color-primary);
+}
+
 .tf-kanban-card-top {
   display: flex;
   align-items: center;

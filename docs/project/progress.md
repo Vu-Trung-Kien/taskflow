@@ -62,6 +62,10 @@ Tài liệu này ghi nhận toàn bộ quá trình phát triển dự án **Task
 | Dashboard Thống kê (Metrics API & UI) | Hoàn tất | Local & CI Pipeline |
 | Xuất dữ liệu CSV (CSV Export API & Download UI) | Hoàn tất | Local & CI Pipeline |
 | Hệ thống thông báo In-app (API & Bell Dropdown) | Hoàn tất | Local & CI Pipeline |
+| Tiến trình quét tự động thông báo TASK_DUE_SOON (@nestjs/schedule) | Hoàn tất | Local & Unit Tests |
+| Rate Limiting endpoint xác thực (@nestjs/throttler) | Hoàn tất | Local & Unit Tests |
+| Đổi mật khẩu chủ động (POST /auth/change-password) | Hoàn tất | Local & Unit Tests |
+| Quản lý hồ sơ người dùng (PATCH /auth/profile & UI Settings) | Hoàn tất | Local & Unit Tests |
 | Bảng kéo-thả Kanban (Drag-and-Drop Board) | Hoàn tất | Local & CI Pipeline |
 | Frontend MVP (React 19 + TypeScript + Vite) | Hoàn tất mã nguồn | Local Dev Server |
 | Hạ tầng AWS Terraform cơ sở (EC2, S3, EBS, ECR, IAM OIDC) | Đã triển khai | AWS Account (`ap-southeast-1`) |
@@ -96,7 +100,7 @@ Dưới đây là các hạng mục tồn đọng được phân loại theo t�
    - Quản lý cờ tính năng trong database, cập nhật có hiệu lực ngay tại runtime.
    - Cung cấp API và guard kiểm tra flag cho backend và frontend.
 5. **Quản lý Tài khoản Cá nhân:**
-   - Đổi mật khẩu chủ động (`POST /auth/change-password`).
+   - Đổi mật khẩu chủ động (`POST /auth/change-password`) - [ĐÃ HOÀN TẤT].
    - Quên mật khẩu và đặt lại mật khẩu an toàn qua email token.
    - Cập nhật thông tin tài khoản (tên hiển thị, avatar).
 
@@ -128,7 +132,7 @@ Dưới đây là các hạng mục tồn đọng được phân loại theo t�
    - Thiết lập Prometheus & Grafana hoặc cấu hình CloudWatch Agent thu thập CPU, RAM, Disk, HTTP request latency và DB connection pool.
    - Cấu hình CloudWatch Alarms gửi cảnh báo qua Email/SNS khi hệ thống gặp sự cố hoặc tải cao.
 5. **Rate Limiting & Bảo mật API:**
-   - Cài đặt `@nestjs/throttler` bảo vệ các route nhạy cảm như `/auth/login`, `/auth/register` chống tấn công brute-force.
+   - Cài đặt `@nestjs/throttler` bảo vệ các route nhạy cảm như `/auth/login`, `/auth/register` chống tấn công brute-force - [ĐÃ HOÀN TẤT].
    - Tích hợp tài liệu API Swagger / OpenAPI (`@nestjs/swagger`) tại `/api-docs`.
 6. **Kiểm thử Tải & Hiệu năng (Load Testing):**
    - Viết kịch bản kiểm thử tải k6 mô phỏng người dùng đồng thời để đánh giá ngưỡng chịu tải của EC2 và database.

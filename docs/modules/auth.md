@@ -18,11 +18,13 @@ Tài liệu này đặc tả chi tiết module Xác thực và Quản lý Phiên
 ## 2. API Công khai & Dịch vụ Xuất bản (Public Interface)
 
 ### 2.1. Endpoints HTTP
-- `POST /auth/register`: Đăng ký tài khoản mới (`RegisterDto`: email, password, name). Trả về Access Token và đặt cookie refresh token.
-- `POST /auth/login`: Xác thực thông tin đăng nhập (`LoginDto`: email, password). Trả về Access Token và đặt cookie refresh token.
+- `POST /auth/register`: Đăng ký tài khoản mới (`RegisterDto`: email, password, name). Trả về Access Token và đặt cookie refresh token. Được bảo vệ bởi `ThrottlerGuard`.
+- `POST /auth/login`: Xác thực thông tin đăng nhập (`LoginDto`: email, password). Trả về Access Token và đặt cookie refresh token. Được bảo vệ bởi `ThrottlerGuard`.
 - `POST /auth/refresh`: Làm mới phiên làm việc. Đọc cookie `taskflow_refresh`, xoay vòng token trong database transaction, cấp Access Token mới và đặt cookie mới.
 - `POST /auth/logout`: Thu hồi phiên làm việc hiện tại và xóa cookie `taskflow_refresh`.
 - `GET /auth/me`: Lấy thông tin hồ sơ của người dùng hiện tại (yêu cầu header `Authorization: Bearer <access-token>`).
+- `PATCH /auth/profile` (hoặc alias `PATCH /auth/me`): Cập nhật thông tin hồ sơ người dùng (`UpdateProfileDto`: `name`). Yêu cầu Bearer JWT, cập nhật tên hiển thị trong database và trả về thông tin user mới nhất.
+- `POST /auth/change-password`: Đổi mật khẩu chủ động (`ChangePasswordDto`: `currentPassword`, `newPassword`). Yêu cầu Bearer JWT, được bảo vệ bởi `ThrottlerGuard`, xác thực mật khẩu hiện tại bằng Argon2id, ngăn trùng mật khẩu cũ, băm mật khẩu mới bằng Argon2id và tự động thu hồi toàn bộ các phiên làm việc khác của người dùng để bảo vệ an toàn tài khoản.
 
 ### 2.2. Dịch vụ & Guard Xuất bản (Exported Providers)
 - `AuthService`: Cung cấp các phương thức xác thực và quản lý session.
@@ -46,9 +48,10 @@ Tài liệu này đặc tả chi tiết module Xác thực và Quản lý Phiên
 
 - `backend/src/auth/auth.module.ts`: Khai báo module, cấu hình JwtModule và xuất bản AuthService, AccessTokenGuard.
 - `backend/src/auth/auth.controller.ts`: Tiếp nhận HTTP requests, xử lý cookie `taskflow_refresh` và trả về kết quả.
-- `backend/src/auth/auth.service.ts`: Toàn bộ logic nghiệp vụ xác thực, Argon2id, dual-token rotation, transaction và replay detection.
-- `backend/src/auth/access-token.guard.ts`: Can thiệp tiền xử lý HTTP, xác thực JWT Bearer header.
-- `backend/src/auth/dto/login.dto.ts` & `register.dto.ts`: Định nghĩa và kiểm tra dữ liệu đầu vào.
+- `backend/src/auth/auth.service.ts`: Toàn bộ logic nghiệp vụ xác thực, Argon2id, dual-token rotation, transaction, đổi mật khẩu, cập nhật hồ sơ và replay detection.
+- `backend/src/auth/access-token.guard.ts`: Can thiệp tiền xử lý HTTP, xác thực JWT Bearer header và kiểm tra phiên còn hiệu lực.
+- `backend/src/auth/dto/login.dto.ts`, `register.dto.ts`, `change-password.dto.ts` & `update-profile.dto.ts`: Định nghĩa và kiểm tra dữ liệu đầu vào.
+- `frontend/src/components/profile/ProfileSettingsModal.tsx`: Giao diện modal quản lý hồ sơ 2 tab (Hồ sơ cá nhân và Bảo mật mật khẩu).
 
 ---
 
@@ -64,10 +67,14 @@ Tài liệu này đặc tả chi tiết module Xác thực và Quản lý Phiên
    - Mỗi lần refresh thành công, hệ thống chỉ sinh token mới trong session hiện tại, giá trị `auth_sessions.expires_at` **không bao giờ được gia hạn**. Đúng 30 ngày kể từ lúc người dùng đăng nhập lần đầu, phiên sẽ hết hạn bắt buộc.
 5. **Chống tấn công đo thời gian (Timing Attack Mitigation)**:
    - Trong `AuthService.login`, nếu email không tồn tại trong database, service vẫn gọi `argon2.verify(dummyPasswordHash, password)`. Điều này khiến thời gian phản hồi của request khi sai email và khi sai mật khẩu là hoàn toàn tương đương nhau, ngăn chặn kẻ xấu dò tìm sự tồn tại của email.
+6. **Thu hồi phiên khi Đổi Mật khẩu Chủ động**:
+   - Khi người dùng đổi mật khẩu thành công qua `POST /auth/change-password`, hệ thống giữ phiên hiện tại (dựa trên `sessionId` gắn trong JWT payload) và tự động thu hồi (`revokedAt = now()`) toàn bộ các phiên `AuthSession` khác của người dùng, đảm bảo các thiết bị hoặc phiên bị rò rỉ trước đó không còn quyền truy cập.
 
 ---
 
 ## 6. Kiểm thử Liên quan (Tests)
 
+- **Unit Test Controller**: `backend/src/auth/auth.controller.spec.ts` (kiểm thử `register`, `login`, `changePassword`, `updateProfile` và metadata guard `ThrottlerGuard`, `AccessTokenGuard`).
+- **Unit Test Service**: `backend/src/auth/auth.service.spec.ts` (kiểm thử toàn diện logic `changePassword`: kiểm tra mật khẩu hiện tại, chống trùng mật khẩu, băm Argon2id và thu hồi phiên khác; kiểm thử `updateProfile`).
 - **Unit Test Frontend**: `frontend/src/auth.test.tsx` (kiểm tra `AuthProvider`, đăng nhập và duy trì token trong bộ nhớ).
 - **E2E Test Backend**: `backend/test/auth.e2e-spec.ts` (kiểm thử toàn diện luồng đăng ký, đăng nhập, xoay vòng refresh token, phát hiện replay attack và đăng xuất).

@@ -6,12 +6,12 @@ Tài liệu này ghi nhận các vấn đề tồn đọng, nợ kỹ thuật (t
 
 ## 1. Điểm lệch giữa Database Schema và Mã nguồn Nghiệp vụ
 
-### 1.1. Enum `TASK_DUE_SOON` chưa có tiến trình kích hoạt
-- **Hiện trạng xác minh**:
-  - Trong migration `backend/prisma/migrations/20261101000000_notifications/migration.sql` và schema `backend/prisma/schema.prisma`, enum `notification_type` định nghĩa 4 giá trị: `TASK_ASSIGNED`, `TASK_STATUS_CHANGED`, `TASK_COMMENT_CREATED`, `TASK_DUE_SOON`.
-  - Trong mã nguồn backend, `NotificationService` được tích hợp vào `backend/src/tasks/task.service.ts` (khi giao task, đổi trạng thái) và `backend/src/collaboration/collaboration.service.ts` (khi tạo comment mới).
-  - Hoàn toàn **không có bất kỳ service, scheduler hay cron job nào** quét các task sắp đến hạn để gọi `createNotification` với loại `TASK_DUE_SOON`.
-- **Hướng xử lý dự kiến**: Xây dựng một module scheduler (hoặc NestJS cron job) quét định kỳ các task có `dueAt` trong vòng 24 giờ tới và sinh thông báo nhắc nhở.
+### 1.1. Enum `TASK_DUE_SOON` chưa có tiến trình kích hoạt — [ĐÃ GIẢI QUYẾT]
+- **Giải pháp thực hiện**: Đã cài đặt `@nestjs/schedule` và xây dựng `TaskDueSchedulerService` tại `backend/src/notifications/task-due-scheduler.service.ts`:
+  - Thiết lập cron job `@Cron(CronExpression.EVERY_30_MINUTES)` quét các task chưa hoàn thành (`status != DONE`), chưa bị xóa (`deletedAt = null`), thuộc dự án chưa lưu trữ (`project.archivedAt = null`) và có `dueAt` trong vòng 24 giờ tới (`gte: now, lte: now + 24h`).
+  - Gửi thông báo loại `TASK_DUE_SOON` tới người được giao (`assigneeId`) hoặc người tạo (`createdById`).
+  - Áp dụng cơ chế deduplication: kiểm tra thông báo `TASK_DUE_SOON` cho cùng task trong 24 giờ qua để ngăn spam thông báo.
+  - Bổ sung unit test toàn diện `task-due-scheduler.service.spec.ts` (100% pass).
 
 ---
 
@@ -40,9 +40,12 @@ Tài liệu này ghi nhận các vấn đề tồn đọng, nợ kỹ thuật (t
   - `src/App.tsx`: Rút gọn còn 65 dòng, chỉ đảm nhiệm routing và route guards.
 - **Kết quả**: Mã nguồn sạch, dễ bảo trì, re-render tối ưu, bộ test `redesign.test.tsx` đạt 100% pass.
 
-### 3.2. Bảng Kanban chưa hỗ trợ sắp xếp thứ tự tùy ý trong cùng một cột
-- **Hiện trạng xác minh**: Giao diện Kanban hỗ trợ kéo-thả thẻ công việc giữa 4 cột trạng thái (`TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`) và gọi `api.updateTask` để đổi trạng thái. Tuy nhiên, bảng `tasks` trong database không có cột `position` hay `order_index`.
-- **Hạn chế**: Thứ tự các card trong một cột phụ thuộc hoàn toàn vào sắp xếp thời gian tạo (`createdAt desc`), người dùng không thể kéo đổi vị trí ưu tiên giữa các task trong cùng một cột.
+### 3.2. Bảng Kanban chưa hỗ trợ sắp xếp thứ tự tùy ý trong cùng một cột — [ĐÃ GIẢI QUYẾT]
+- **Giải pháp thực hiện**:
+  - Bổ sung cột `position Float @default(65536.0)` vào bảng `tasks` trong schema Prisma và migration `backend/prisma/migrations/20261121000000_task_position/migration.sql` kèm index `(project_id, status, position)`.
+  - Cập nhật DTO `CreateTaskDto`, `UpdateTaskDto` và `TaskService`: hỗ trợ nhận và cập nhật `position`, tự động tính toán vị trí tiếp theo khi tạo mới, và sắp xếp task theo `position asc, createdAt desc`.
+  - Nâng cấp giao diện `KanbanBoard.tsx`: hỗ trợ kéo thả thẻ với thuật toán Fractional Indexing (`(prevPos + nextPos) / 2`), hiển thị đường chỉ báo vị trí (`drop-before`, `drop-after`), hỗ trợ cả đổi trạng thái liên cột lẫn đổi thứ tự ưu tiên trong cùng một cột.
+  - Bổ sung bộ unit test `backend/src/tasks/task.service.spec.ts` (100% pass).
 
 ---
 
@@ -56,8 +59,11 @@ Tài liệu này ghi nhận các vấn đề tồn đọng, nợ kỹ thuật (t
 
 ## 5. An toàn thông tin và Bảo vệ API
 
-### 5.1. Thiếu Rate Limiting trên các endpoint nhạy cảm
-- **Hiện trạng xác minh**: Backend NestJS chưa cài đặt `@nestjs/throttler`. Các route xác thực như `POST /auth/login` và `POST /auth/register` chưa có cơ chế hạn chế tần suất gọi, tiềm ẩn rủi ro brute-force mật khẩu.
+### 5.1. Thiếu Rate Limiting trên các endpoint nhạy cảm — [ĐÃ GIẢI QUYẾT]
+- **Giải pháp thực hiện**: Đã cài đặt `@nestjs/throttler` và cấu hình bảo vệ rate limiting tại `backend/src/app.module.ts` và `backend/src/auth/auth.controller.ts`:
+  - `ThrottlerModule.forRootAsync` hỗ trợ tùy biến qua biến môi trường `AUTH_RATE_LIMIT_TTL` (mặc định 60.000 ms) và `AUTH_RATE_LIMIT_MAX` (mặc định 10 requests).
+  - Áp dụng `ThrottlerGuard` trực tiếp lên endpoint nhạy cảm `POST /auth/register` và `POST /auth/login` để ngăn chặn tấn công brute-force và lạm dụng tài nguyên.
+  - Bổ sung bộ unit test `backend/src/auth/auth.controller.spec.ts` kiểm thử metadata guard và logic phiên làm việc.
 
 ---
 

@@ -2,6 +2,7 @@ import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsISO8601,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -35,6 +36,10 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsEnum(TaskPriority)
   priority?: TaskPriority;
+
+  @IsOptional()
+  @IsNumber()
+  position?: number;
 
   @IsOptional()
   @IsUUID()

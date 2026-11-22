@@ -61,6 +61,9 @@ Mật khẩu người dùng được băm độc quyền bằng thuật toán **
 - **Chống tấn công đo thời gian (Timing Attack Mitigation)**:
   - Trong [`AuthService.login`](../../backend/src/auth/auth.service.ts), khi người dùng nhập email không tồn tại trong hệ thống, hàm không lập tức trả về lỗi mà vẫn thực hiện so sánh với chuỗi hash giả định (`dummyPasswordHash`).
   - Kết quả: Thời gian xử lý của request khi *sai email* và khi *sai mật khẩu* là tương đương nhau (~100-200ms), ngăn chặn kẻ tấn công suy đoán sự tồn tại của tài khoản trong hệ thống thông qua độ trễ phản hồi.
+- **Đổi mật khẩu chủ động & Thu hồi phiên tự động**:
+  - Khi người dùng đổi mật khẩu qua [`POST /auth/change-password`](../../backend/src/auth/auth.controller.ts), hệ thống xác thực mật khẩu hiện tại bằng Argon2id, ngăn chặn đặt trùng mật khẩu cũ và băm mật khẩu mới bằng Argon2id.
+  - Sau khi cập nhật, hệ thống tự động thu hồi (`auth_sessions.revokedAt = now()`) toàn bộ các phiên làm việc khác của người dùng trong cùng transaction, đảm bảo các thiết bị khác bị đăng xuất ngay lập tức.
 
 ### 2.2. Kiến trúc Token Kép (Dual-Token Architecture)
 Hệ thống sử dụng kết hợp giữa **Access Token ngắn hạn** và **Refresh Token dài hạn xoay vòng**:

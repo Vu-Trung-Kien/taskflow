@@ -158,6 +158,18 @@ export const authApi = {
   me() {
     return apiRequest<User>('/auth/me');
   },
+  changePassword(currentPassword: string, newPassword: string) {
+    return apiRequest<{ message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+  updateProfile(input: { name?: string }) {
+    return apiRequest<User>('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
 };
 
 export const projectApi = {

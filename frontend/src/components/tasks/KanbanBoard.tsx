@@ -33,7 +33,7 @@ interface KanbanBoardProps {
   canEdit: boolean;
   selectedTaskId?: string;
   onSelectTask: (task: Task) => void;
-  onDropStatus: (taskId: string, targetStatus: TaskStatus) => void;
+  onDropStatus: (taskId: string, targetStatus: TaskStatus, targetPosition?: number) => void;
   onQuickAdd?: (status: TaskStatus) => void;
 }
 
@@ -47,12 +47,18 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [activeDropColumn, setActiveDropColumn] = useState<TaskStatus | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<{
+    cardId: string;
+    position: 'before' | 'after';
+  } | null>(null);
 
   return (
     <div className="tf-kanban-container">
       <div className="tf-kanban-board">
         {KANBAN_COLUMNS.map((column) => {
-          const columnTasks = tasks.filter((t) => t.status === column.status);
+          const columnTasks = tasks
+            .filter((t) => t.status === column.status)
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
           const isDragOver = activeDropColumn === column.status;
 
           return (
@@ -76,9 +82,14 @@ export function KanbanBoard({
                 if (!canEdit) return;
                 e.preventDefault();
                 setActiveDropColumn(null);
+                setDropIndicator(null);
                 const taskId = e.dataTransfer.getData('text/plain') || draggedId;
+                setDraggedId(null);
                 if (taskId) {
-                  onDropStatus(taskId, column.status);
+                  const otherTasks = columnTasks.filter((t) => t.id !== taskId);
+                  const lastTask = otherTasks[otherTasks.length - 1];
+                  const newPosition = (lastTask?.position ?? 0) + 65536.0;
+                  onDropStatus(taskId, column.status, newPosition);
                 }
               }}
             >
@@ -117,6 +128,7 @@ export function KanbanBoard({
                 {columnTasks.map((task) => {
                   const isSelected = selectedTaskId === task.id;
                   const isDragging = draggedId === task.id;
+                  const indicator = dropIndicator?.cardId === task.id ? dropIndicator.position : null;
                   const isOverdue =
                     task.dueAt &&
                     new Date(task.dueAt) < new Date() &&
@@ -128,7 +140,9 @@ export function KanbanBoard({
                   return (
                     <article
                       key={task.id}
-                      className={`tf-kanban-card ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                      className={`tf-kanban-card ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''} ${
+                        indicator ? `drop-${indicator}` : ''
+                      }`}
                       draggable={canEdit}
                       onDragStart={(e) => {
                         if (!canEdit) return;
@@ -136,9 +150,70 @@ export function KanbanBoard({
                         e.dataTransfer.effectAllowed = 'move';
                         setDraggedId(task.id);
                       }}
+                      onDragOver={(e) => {
+                        if (!canEdit || !draggedId || draggedId === task.id) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const isBefore = e.clientY < rect.top + rect.height / 2;
+                        setDropIndicator({
+                          cardId: task.id,
+                          position: isBefore ? 'before' : 'after',
+                        });
+                        if (activeDropColumn !== column.status) {
+                          setActiveDropColumn(column.status);
+                        }
+                      }}
+                      onDragLeave={(e) => {
+                        if (!canEdit) return;
+                        if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                        if (dropIndicator?.cardId === task.id) {
+                          setDropIndicator(null);
+                        }
+                      }}
+                      onDrop={(e) => {
+                        if (!canEdit) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const movingTaskId = e.dataTransfer.getData('text/plain') || draggedId;
+                        const currentDrop = dropIndicator;
+                        setDraggedId(null);
+                        setActiveDropColumn(null);
+                        setDropIndicator(null);
+
+                        if (!movingTaskId || movingTaskId === task.id) return;
+
+                        const otherTasks = columnTasks.filter((t) => t.id !== movingTaskId);
+                        const targetIdx = otherTasks.findIndex((t) => t.id === task.id);
+                        if (targetIdx === -1) return;
+
+                        const isBefore = currentDrop?.position === 'before';
+                        let newPosition: number;
+
+                        if (isBefore) {
+                          if (targetIdx === 0) {
+                            newPosition = (otherTasks[0].position ?? 65536.0) / 2;
+                          } else {
+                            const prevPos = otherTasks[targetIdx - 1].position ?? 0;
+                            const nextPos = otherTasks[targetIdx].position ?? (prevPos + 65536.0);
+                            newPosition = (prevPos + nextPos) / 2;
+                          }
+                        } else {
+                          if (targetIdx === otherTasks.length - 1) {
+                            newPosition = (otherTasks[targetIdx].position ?? 0) + 65536.0;
+                          } else {
+                            const prevPos = otherTasks[targetIdx].position ?? 0;
+                            const nextPos = otherTasks[targetIdx + 1].position ?? (prevPos + 65536.0);
+                            newPosition = (prevPos + nextPos) / 2;
+                          }
+                        }
+
+                        onDropStatus(movingTaskId, column.status, newPosition);
+                      }}
                       onDragEnd={() => {
                         setDraggedId(null);
                         setActiveDropColumn(null);
+                        setDropIndicator(null);
                       }}
                       onClick={() => onSelectTask(task)}
                       role="button"

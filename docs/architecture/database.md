@@ -74,6 +74,7 @@ erDiagram
         text description "Mô tả chi tiết"
         task_status status "TODO, IN_PROGRESS, DONE, BLOCKED"
         task_priority priority "LOW, MEDIUM, HIGH, URGENT"
+        float8 position "Vị trí sắp xếp Kanban (Fractional Indexing)"
         timestamptz due_at "Hạn chót hoàn thành"
         timestamptz deleted_at "Thời điểm xóa mềm (null = hoạt động)"
         timestamptz created_at

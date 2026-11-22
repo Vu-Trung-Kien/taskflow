@@ -39,7 +39,7 @@ export class TaskService {
       include: {
         assignee: { select: { id: true, email: true, name: true } },
       },
-      orderBy: [{ dueAt: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ position: 'asc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -91,6 +91,20 @@ export class TaskService {
       await this.requireProjectAssignee(projectId, dto.assigneeId);
     }
 
+    let position = dto.position;
+    if (position === undefined) {
+      const lastTask = await this.prisma.task.findFirst({
+        where: {
+          projectId,
+          status: dto.status ?? TaskStatus.TODO,
+          deletedAt: null,
+        },
+        orderBy: { position: 'desc' },
+        select: { position: true },
+      });
+      position = (lastTask?.position ?? 0) + 65536.0;
+    }
+
     const createdTask = await this.prisma.task.create({
       data: {
         projectId,
@@ -101,6 +115,7 @@ export class TaskService {
         description: dto.description || null,
         status: dto.status,
         priority: dto.priority,
+        position,
         dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
       },
       include: {
@@ -150,6 +165,7 @@ export class TaskService {
       status: dto.status,
       priority: dto.priority,
       assigneeId: dto.assigneeId,
+      position: dto.position,
       dueAt:
         dto.dueAt === undefined
           ? undefined

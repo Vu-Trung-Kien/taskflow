@@ -25,19 +25,23 @@ Tài liệu này ghi nhận kế hoạch phát triển các tính năng nghiệp
 
 ---
 
-## 3. Quét Thông báo Công việc Sắp đến hạn (TASK_DUE_SOON) `[CHƯA LÀM]`
+## 3. Quét Thông báo Công việc Sắp đến hạn (TASK_DUE_SOON) `[ĐÃ HOÀN TẤT]`
 
 - **Mục tiêu**: Tự động gửi thông báo in-app nhắc nhở khi công việc sắp đến hạn hoàn thành (loại enum `TASK_DUE_SOON` đã có trong migration `backend/prisma/migrations/20261101000000_notifications/`).
-- **Hướng dự kiến**: Sử dụng cron job nội bộ trong NestJS (`@nestjs/schedule`) để quét định kỳ các task có `dueAt` gần kề. Do hệ thống hiện chạy trên một instance duy nhất (theo ADR-002), cron nội bộ đáp ứng tốt mà không lo rủi ro chạy trùng lặp giữa nhiều node.
+- **Hiện trạng triển khai**:
+  - Đã tích hợp `@nestjs/schedule` và xây dựng `TaskDueSchedulerService` tại `backend/src/notifications/task-due-scheduler.service.ts`.
+  - Cron job quét định kỳ 30 phút một lần các công việc chưa hoàn tất có `dueAt` trong vòng 24 giờ tới và gửi thông báo `TASK_DUE_SOON` cho người được giao hoặc người tạo.
+  - Tích hợp cơ chế deduplication ngăn gửi thông báo trùng lặp trong 24 giờ. Đạt 100% pass unit tests.
 
 ---
 
-## 4. Quản lý Tài khoản & Hồ sơ Cá nhân `[CHƯA LÀM]`
+## 4. Quản lý Tài khoản & Hồ sơ Cá nhân
 
-- **Chức năng dự kiến**:
-  - Đổi mật khẩu chủ động (`POST /auth/change-password`).
-  - Quên mật khẩu và gửi token khôi phục mật khẩu qua Email.
-  - Cập nhật thông tin cá nhân (tên hiển thị, avatar).
+- **Chức năng đã hoàn thành**:
+  - Đổi mật khẩu chủ động (`POST /auth/change-password`) `[ĐÃ HOÀN TẤT]`: Xác thực Argon2id, chống trùng mật khẩu, băm Argon2id và thu hồi các phiên đăng nhập khác.
+- **Chức năng tiếp tục phát triển**:
+  - Quên mật khẩu và gửi token khôi phục mật khẩu qua Email `[CHƯA LÀM]`.
+  - Cập nhật thông tin cá nhân (tên hiển thị, avatar) `[CHƯA LÀM]`.
 
 ---
 
@@ -51,7 +55,7 @@ Tài liệu này ghi nhận kế hoạch phát triển các tính năng nghiệp
 ## 5. Nâng cấp Trải nghiệm Giao diện Frontend `[CHƯA LÀM]`
 
 - **Tách module mã nguồn `App.tsx`**: Tái cấu trúc thành các thư mục chuẩn `components/`, `pages/`, `hooks/`, `context/` để giảm độ phức tạp của component chính.
-- **Hỗ trợ sắp xếp thứ tự tùy ý trên Kanban Board**: Bổ sung trường `position` vào bảng `tasks` để cho phép người dùng kéo đổi thứ tự ưu tiên trong cùng một cột trạng thái.
+- **Hỗ trợ sắp xếp thứ tự tùy ý trên Kanban Board** `[ĐÃ HOÀN TẤT]`: Bổ sung trường `position` vào bảng `tasks` và migration, tích hợp Fractional Indexing trên `KanbanBoard.tsx` cho phép kéo thả đổi thứ tự ưu tiên trong cột lẫn đổi trạng thái liên cột.
 - **Tìm kiếm và bộ lọc nâng cao**: Tìm kiếm từ khóa theo tiêu đề, lọc đa điều kiện theo người thực hiện và khoảng ngày hết hạn.
 - **Thông báo Toast**: Hiển thị popup thông báo ngắn phản hồi trạng thái thành công/lỗi thay cho thông báo tĩnh.
 - **Thanh tiến trình tải tệp**: Hiển thị phần trăm tiến độ khi upload tệp đính kèm kích thước lớn lên S3.
@@ -74,6 +78,6 @@ Tài liệu này ghi nhận kế hoạch phát triển các tính năng nghiệp
   - Expose endpoint Prometheus metrics `/metrics` từ backend NestJS.
   - Cấu hình CloudWatch Agent hoặc Prometheus/Grafana thu thập chỉ số CPU, RAM, Disk, latency và connection pool.
   - Cấu hình CloudWatch Alarms gửi cảnh báo khi hệ thống gặp sự cố.
-- **Rate Limiting & API Documentation** `[CHƯA LÀM]`:
-  - Cài đặt `@nestjs/throttler` bảo vệ endpoint xác thực (`/auth/login`, `/auth/register`).
-  - Tích hợp tài liệu Swagger / OpenAPI tại endpoint `/api-docs`.
+- **Rate Limiting & API Documentation**:
+  - Cài đặt `@nestjs/throttler` bảo vệ endpoint xác thực (`/auth/login`, `/auth/register`) `[ĐÃ HOÀN TẤT]`.
+  - Tích hợp tài liệu Swagger / OpenAPI tại endpoint `/api-docs` `[CHƯA LÀM]`.

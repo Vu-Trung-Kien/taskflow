@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { CollaborationModule } from './collaboration/collaboration.module';
 import { HealthModule } from './health/health.module';
@@ -12,6 +14,21 @@ import { VersionModule } from './version/version.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<string | number>('AUTH_RATE_LIMIT_TTL')
+            ? Number(config.get('AUTH_RATE_LIMIT_TTL'))
+            : 60000,
+          limit: config.get<string | number>('AUTH_RATE_LIMIT_MAX')
+            ? Number(config.get('AUTH_RATE_LIMIT_MAX'))
+            : 10,
+        },
+      ],
+    }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     CollaborationModule,

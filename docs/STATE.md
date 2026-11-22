@@ -2,10 +2,36 @@
 
 ## Đang làm
 - Chuẩn bị các bước hoàn thiện tiếp theo theo lộ trình phát triển:
-  - Cài đặt `@nestjs/throttler` bảo vệ rate limiting cho các route xác thực nhạy cảm (`/auth/login`, `/auth/register`).
-  - Triển khai tiến trình quét và kích hoạt thông báo tự động `TASK_DUE_SOON`.
+  - Tích hợp tài liệu Swagger / OpenAPI (`@nestjs/swagger`) tại endpoint `/api-docs`.
+  - Hỗ trợ Tìm kiếm và Lọc nâng cao cho Tasks (Full-text search title/description, lọc kết hợp nhiều điều kiện).
 
 ## Đã xong
+- **Đã xong Bước 10 (Quản lý Hồ sơ Cá nhân: PATCH /auth/profile & Profile Settings Modal)**:
+  - Xây dựng DTO `UpdateProfileDto` tại `backend/src/auth/dto/update-profile.dto.ts` (`name?: string` với giới hạn độ dài 1-100 ký tự).
+  - Triển khai phương thức `updateProfile` trong `AuthService` và endpoint `@Patch(['profile', 'me'])` trong `AuthController` bảo vệ bởi `AccessTokenGuard`.
+  - Cập nhật client `authApi.updateProfile` và bổ sung hàm `updateUser` trong `AuthContext` (`frontend/src/auth.tsx`).
+  - Xây dựng modal hoàn chỉnh `ProfileSettingsModal.tsx` gồm 2 tab: "Hồ sơ cá nhân" (chỉnh sửa tên hiển thị) và "Bảo mật & Mật khẩu" (đổi mật khẩu chủ động kèm thông báo bảo mật đăng xuất phiên khác).
+  - Tích hợp mục "Cài đặt tài khoản" vào menu người dùng trong `TopBar.tsx`.
+  - Viết bộ unit test đạt 100% pass (39/39 tests backend, 13/13 tests frontend, 0 lint warnings/errors).
+  - Cập nhật đầy đủ tài liệu API [docs/api/reference.md](file:///home/hotboyhust/project/taskflow/docs/api/reference.md), [docs/modules/auth.md](file:///home/hotboyhust/project/taskflow/docs/modules/auth.md), [docs/project/roadmap.md](file:///home/hotboyhust/project/taskflow/docs/project/roadmap.md).
+- **Đã xong Bước 9 (Hỗ trợ Sắp xếp Thứ tự Tùy ý trên Kanban Board - Kanban Reorder)**:
+  - Bổ sung trường `position Float @default(65536.0)` vào model `Task` trong schema Prisma và tạo migration SQL `backend/prisma/migrations/20261121000000_task_position/migration.sql` kèm index `(project_id, status, position)` tuân thủ quy tắc Expand/Contract.
+  - Cập nhật `CreateTaskDto`, `UpdateTaskDto` và `TaskService`: hỗ trợ nhận `position`, tự động tính toán vị trí tiếp theo khi tạo task mới, và sắp xếp task theo `position asc, createdAt desc`.
+  - Nâng cấp component `KanbanBoard.tsx`: áp dụng thuật toán Fractional Indexing (`(prevPos + nextPos) / 2`), hiển thị đường chỉ báo vị trí thả trực quan (`drop-before`, `drop-after`), hỗ trợ cả di chuyển giữa các cột trạng thái lẫn kéo đổi thứ tự ưu tiên trong cùng một cột.
+  - Bổ sung bộ unit test `backend/src/tasks/task.service.spec.ts`, đạt 100% pass (36/36 tests backend, 13/13 tests frontend, 0 lint warnings/errors).
+  - Cập nhật tài liệu: [docs/project/known-issues.md](file:///home/hotboyhust/project/taskflow/docs/project/known-issues.md) (đánh dấu giải quyết mục 3.2), [docs/project/roadmap.md](file:///home/hotboyhust/project/taskflow/docs/project/roadmap.md), [docs/api/reference.md](file:///home/hotboyhust/project/taskflow/docs/api/reference.md), [docs/modules/tasks.md](file:///home/hotboyhust/project/taskflow/docs/modules/tasks.md) và [docs/architecture/database.md](file:///home/hotboyhust/project/taskflow/docs/architecture/database.md).
+- **Đã xong Bước 8 (Triển khai API Đổi mật khẩu chủ động POST /auth/change-password)**:
+  - Xây dựng DTO `ChangePasswordDto` tại [backend/src/auth/dto/change-password.dto.ts](file:///home/hotboyhust/project/taskflow/backend/src/auth/dto/change-password.dto.ts) (`currentPassword`, `newPassword` tối thiểu 12 ký tự).
+  - Triển khai phương thức `changePassword` trong `AuthService` với thuật toán Argon2id: kiểm tra mật khẩu hiện tại, chống trùng mật khẩu cũ, băm mật khẩu mới bằng Argon2id.
+  - Tự động thu hồi toàn bộ các phiên làm việc khác (`auth_sessions.revokedAt = now()`) trong cùng transaction, chỉ duy trì phiên của thiết bị đang gọi thao tác (`sessionId` lấy từ JWT).
+  - Áp dụng `AccessTokenGuard` và `ThrottlerGuard` bảo vệ endpoint tại `backend/src/auth/auth.controller.ts`.
+  - Bổ sung hàm `changePassword` vào client `authApi` tại [frontend/src/api.ts](file:///home/hotboyhust/project/taskflow/frontend/src/api.ts).
+  - Viết bộ unit test toàn diện cho cả service [backend/src/auth/auth.service.spec.ts](file:///home/hotboyhust/project/taskflow/backend/src/auth/auth.service.spec.ts) và controller [backend/src/auth/auth.controller.spec.ts](file:///home/hotboyhust/project/taskflow/backend/src/auth/auth.controller.spec.ts), đạt 100% pass (32/32 tests backend).
+  - Cập nhật đầy đủ tài liệu API [docs/api/reference.md](file:///home/hotboyhust/project/taskflow/docs/api/reference.md), [docs/modules/auth.md](file:///home/hotboyhust/project/taskflow/docs/modules/auth.md), [docs/architecture/security.md](file:///home/hotboyhust/project/taskflow/docs/architecture/security.md), [docs/project/roadmap.md](file:///home/hotboyhust/project/taskflow/docs/project/roadmap.md) và [docs/project/progress.md](file:///home/hotboyhust/project/taskflow/docs/project/progress.md).
+- **Đã xong Bước 7 (Bảo vệ Rate Limiting & Tự động quét thông báo TASK_DUE_SOON)**:
+  - Cài đặt `@nestjs/throttler` bảo vệ rate limiting cho các route xác thực nhạy cảm (`POST /auth/register`, `POST /auth/login`), hỗ trợ cấu hình linh hoạt qua biến môi trường `AUTH_RATE_LIMIT_TTL` (mặc định 60.000 ms) và `AUTH_RATE_LIMIT_MAX` (mặc định 10 requests).
+  - Cài đặt `@nestjs/schedule` và xây dựng `TaskDueSchedulerService` tại `backend/src/notifications/task-due-scheduler.service.ts` quét định kỳ các task sắp đến hạn trong vòng 24 giờ tới của các dự án đang hoạt động và tự động sinh thông báo in-app `TASK_DUE_SOON` tới người được giao (hoặc người tạo), tích hợp cơ chế deduplication ngăn chặn gửi trùng lặp trong 24 giờ.
+  - Bổ sung bộ unit test toàn diện cho `AuthController` (`backend/src/auth/auth.controller.spec.ts`) và `TaskDueSchedulerService` (`backend/src/notifications/task-due-scheduler.service.spec.ts`), đạt 100% pass (27/27 tests backend).
 - **Đã xong Bước 1 (Nền tảng: Overview, Architecture, Data Model)**:
   - Cập nhật [`docs/overview/product-overview.md`](overview/product-overview.md): Rà khớp mã nguồn, đưa Notification và Kanban vào chính thức, gắn nhãn hạ tầng.
   - Cập nhật [`docs/architecture/system-design.md`](architecture/system-design.md): Sơ đồ thành phần Mermaid chi tiết, phân lớp đơn hướng và ma trận hạ tầng.

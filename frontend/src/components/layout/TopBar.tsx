@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { Avatar } from '../ui/Avatar';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { ChevronDownIcon, LogOutIcon, SparklesIcon } from '../icons';
+import { ChevronDownIcon, LogOutIcon, SettingsIcon, SparklesIcon } from '../icons';
+import { ProfileSettingsModal } from '../profile/ProfileSettingsModal';
 
 interface TopBarProps {
   breadcrumbs?: ReactNode;
@@ -14,6 +15,7 @@ export function TopBar({ breadcrumbs, onToggleSidebar }: TopBarProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,6 +96,18 @@ export function TopBar({ breadcrumbs, onToggleSidebar }: TopBarProps) {
               <div className="tf-dropdown-divider" />
               <button
                 type="button"
+                className="tf-dropdown-item"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  setShowSettingsModal(true);
+                }}
+                role="menuitem"
+              >
+                <SettingsIcon size={16} />
+                <span>Cài đặt tài khoản</span>
+              </button>
+              <button
+                type="button"
                 className="tf-dropdown-item tf-danger-item"
                 onClick={() => void handleLogout()}
                 role="menuitem"
@@ -105,6 +119,11 @@ export function TopBar({ breadcrumbs, onToggleSidebar }: TopBarProps) {
           )}
         </div>
       </div>
+
+      <ProfileSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </header>
   );
 }

@@ -66,7 +66,11 @@ export class AccessTokenGuard implements CanActivate {
       throw new UnauthorizedException('Session is invalid or expired.');
     }
 
-    request.user = { id: payload.sub, email: payload.email };
+    request.user = {
+      id: payload.sub,
+      email: payload.email,
+      sessionId: payload.sid,
+    };
     return true;
   }
 }
