@@ -109,6 +109,7 @@ model Task {
   description  String?      @db.Text
   status       TaskStatus   @default(TODO)
   priority     TaskPriority @default(MEDIUM)
+  position     Float        @default(65536.0)
   dueAt        DateTime?    @map("due_at") @db.Timestamptz(3)
   deletedAt    DateTime?    @map("deleted_at") @db.Timestamptz(3)
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -124,6 +125,7 @@ model Task {
 
   @@unique([projectId, id])
   @@index([projectId, status, deletedAt])
+  @@index([projectId, status, position])
   @@index([projectId, dueAt])
   @@index([assigneeId, status])
   @@index([parentTaskId])

@@ -19,16 +19,16 @@ Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/
 ## 2. API Công khai & Dịch vụ Xuất bản (Public Interface)
 
 ### 2.1. Endpoints HTTP
-- `POST /projects/:projectId/tasks`: Tạo công việc mới (`CreateTaskDto`: title, description, status, priority, dueAt, assigneeId, parentTaskId). Chỉ `OWNER` và `MEMBER`.
-- `GET /projects/:projectId/tasks`: Lấy danh sách công việc của dự án (`ListTasksDto`: lọc theo status, priority, includeDeleted). Mọi thành viên đều được xem.
+- `POST /projects/:projectId/tasks`: Tạo công việc mới (`CreateTaskDto`: title, description, status, priority, position, dueAt, assigneeId, parentTaskId). Chỉ `OWNER` và `MEMBER`.
+- `GET /projects/:projectId/tasks`: Lấy danh sách công việc của dự án (`ListTasksDto`: lọc theo status, priority, includeDeleted; sắp xếp theo `position asc, createdAt desc`). Mọi thành viên đều được xem.
 - `GET /projects/:projectId/tasks/export`: Xuất danh sách công việc ra định dạng CSV (trả về header `Content-Disposition: attachment; filename=tasks-*.csv`).
 - `GET /projects/:projectId/tasks/:taskId`: Xem thông tin chi tiết của một công việc kèm danh sách sub-tasks, người được giao và người tạo.
-- `PATCH /projects/:projectId/tasks/:taskId`: Cập nhật công việc (`UpdateTaskDto`: title, description, status, priority, dueAt, assigneeId). Chỉ `OWNER` và `MEMBER`.
+- `PATCH /projects/:projectId/tasks/:taskId`: Cập nhật công việc (`UpdateTaskDto`: title, description, status, priority, position, dueAt, assigneeId). Chỉ `OWNER` và `MEMBER`.
 - `DELETE /projects/:projectId/tasks/:taskId`: Xóa mềm công việc (cập nhật `deletedAt = now()`). Chỉ `OWNER` và `MEMBER`.
 - `POST /projects/:projectId/tasks/:taskId/restore`: Khôi phục công việc đã xóa mềm (cập nhật `deletedAt = null`). Chỉ `OWNER` và `MEMBER`.
 
 ### 2.2. Dịch vụ Xuất bản (Exported Providers)
-- `TaskService`: Cung cấp các thao tác nghiệp vụ trên task, xử lý xóa mềm và xuất file CSV.
+- `TaskService`: Cung cấp các thao tác nghiệp vụ trên task, xử lý tính toán `position` Kanban, xóa mềm và xuất file CSV.
 
 ---
 
@@ -48,9 +48,9 @@ Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/
 
 - `backend/src/tasks/tasks.module.ts`: Khai báo module, import `ProjectsModule`, `NotificationsModule` và xuất bản `TaskService`.
 - `backend/src/tasks/task.controller.ts`: Tiếp nhận HTTP requests, kiểm tra guard xác thực và gọi service.
-- `backend/src/tasks/task.service.ts`: Toàn bộ logic nghiệp vụ task, sub-task, soft-delete, export CSV và trigger notification.
+- `backend/src/tasks/task.service.ts`: Toàn bộ logic nghiệp vụ task, sub-task, soft-delete, tính vị trí `position`, export CSV và trigger notification.
 - `backend/src/tasks/dto/*.dto.ts`: Bộ DTO kiểm tra dữ liệu đầu vào (`CreateTaskDto`, `UpdateTaskDto`, `ListTasksDto`).
-- `frontend/src/App.tsx`: Chứa component `KanbanBoard`, xử lý sự kiện HTML5 drag-and-drop và optimistic UI update.
+- `frontend/src/components/tasks/KanbanBoard.tsx`: Component bảng kéo-thả Kanban, xử lý Fractional Indexing, drop indicators và optimistic update.
 
 ---
 
@@ -62,8 +62,8 @@ Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/
    - Một khi công việc đã được tạo, bạn **không thể thay đổi task cha** bằng lệnh cập nhật (`PATCH /tasks/:id`). Nếu DTO có chứa trường `parentTaskId`, `TaskService.update` sẽ lập tức từ chối với lỗi 400 (`Task parent cannot be modified.`).
 3. **Người được giao (Assignee) bắt buộc phải là Thành viên Dự án**:
    - Khi gán `assigneeId`, service luôn kiểm tra sự tồn tại của người dùng trong bảng `project_members` của chính dự án đó. Không thể gán một công việc cho người ngoài dự án.
-4. **Bảng kéo-thả Kanban chỉ đổi trạng thái cột**:
-   - Thao tác kéo-thả trên giao diện Kanban (`frontend/src/App.tsx`) chỉ cập nhật trường `status` của task. Hiện tại, database chưa có cột `position` nên hệ thống **chưa hỗ trợ sắp xếp vị trí tùy ý giữa các thẻ trong cùng một cột** (xem lộ trình tại [`docs/project/roadmap.md`](../project/roadmap.md)).
+4. **Sắp xếp Thứ tự Tùy ý trên Bảng Kanban (Đã Hoàn tất)**:
+   - Bảng `tasks` lưu trường `position Float @default(65536.0)`. Khi kéo-thả trên `KanbanBoard.tsx`, hệ thống tính toán vị trí mới bằng thuật toán Fractional Indexing (`(prevPos + nextPos) / 2`), hỗ trợ cả di chuyển giữa các cột trạng thái lẫn kéo đổi thứ tự ưu tiên trong cùng một cột mà không cần cập nhật lại toàn bộ các thẻ khác.
 5. **Định dạng Xuất CSV và UTF-8 BOM**:
    - Endpoint `/tasks/export` trả về chuỗi CSV có đính kèm UTF-8 BOM (`\uFEFF`) ở đầu stream. Mục đích là để Microsoft Excel tự động nhận diện bảng mã tiếng Việt có dấu mà không bị lỗi font. Nếu đọc file này bằng các script tự động bên ngoài, cần lưu ý xử lý ký tự BOM này.
 
@@ -71,4 +71,5 @@ Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/
 
 ## 6. Kiểm thử Liên quan (Tests)
 
+- **Unit Test Service**: `backend/src/tasks/task.service.spec.ts` (kiểm thử `list` sắp xếp theo position, `create` tự động gán position tiếp theo, `update` vị trí).
 - **E2E Test Backend**: `backend/test/projects-tasks.e2e-spec.ts` (kiểm thử tạo task, subtask 1 cấp, đổi trạng thái, xóa mềm, khôi phục và xuất file CSV).

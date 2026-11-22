@@ -12,18 +12,22 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import type { AuthenticatedRequest } from '../auth/access-token.guard';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CollaborationService } from './collaboration.service';
 
+@ApiTags('Collaboration')
+@ApiBearerAuth('JWT-auth')
 @Controller('projects/:projectId/tasks/:taskId')
 @UseGuards(AccessTokenGuard)
 export class CollaborationController {
   constructor(private readonly collaboration: CollaborationService) {}
 
   @Get('comments')
+  @ApiOperation({ summary: 'Danh sách bình luận trên công việc' })
   listComments(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -33,6 +37,7 @@ export class CollaborationController {
   }
 
   @Post('comments')
+  @ApiOperation({ summary: 'Tạo bình luận mới' })
   createComment(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -48,6 +53,7 @@ export class CollaborationController {
   }
 
   @Patch('comments/:commentId')
+  @ApiOperation({ summary: 'Sửa bình luận' })
   updateComment(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -66,6 +72,7 @@ export class CollaborationController {
 
   @Delete('comments/:commentId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xóa bình luận' })
   deleteComment(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -81,6 +88,7 @@ export class CollaborationController {
   }
 
   @Get('attachments')
+  @ApiOperation({ summary: 'Danh sách tệp đính kèm' })
   listAttachments(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -94,6 +102,7 @@ export class CollaborationController {
   }
 
   @Post('attachments')
+  @ApiOperation({ summary: 'Yêu cầu Presigned URL tải lên tệp đính kèm' })
   createAttachment(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -109,6 +118,7 @@ export class CollaborationController {
   }
 
   @Post('attachments/:attachmentId/complete')
+  @ApiOperation({ summary: 'Xác nhận tải lên hoàn tất (HeadObject S3)' })
   completeAttachment(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -124,6 +134,7 @@ export class CollaborationController {
   }
 
   @Get('attachments/:attachmentId/download')
+  @ApiOperation({ summary: 'Lấy Presigned URL tải xuống tệp đính kèm' })
   getAttachmentDownloadUrl(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -140,6 +151,7 @@ export class CollaborationController {
 
   @Delete('attachments/:attachmentId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xóa tệp đính kèm' })
   deleteAttachment(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,

@@ -40,10 +40,11 @@ Tài liệu này đặc tả chi tiết module Thông báo (`backend/src/notific
 
 ## 4. Các File Chính trong Mã nguồn
 
-- `backend/src/notifications/notifications.module.ts`: Khai báo module, cung cấp và xuất bản `NotificationService`.
+- `backend/src/notifications/notifications.module.ts`: Khai báo module, cung cấp và xuất bản `NotificationService` cùng `TaskDueSchedulerService`.
 - `backend/src/notifications/notification.controller.ts`: Tiếp nhận HTTP requests, kiểm tra guard xác thực và xử lý phân trang query.
 - `backend/src/notifications/notification.service.ts`: Logic truy vấn, đếm unreadCount, đánh dấu đã đọc và khởi tạo thông báo.
-- `frontend/src/App.tsx`: Chứa component chuông thông báo (Notification bell badge & dropdown menu).
+- `backend/src/notifications/task-due-scheduler.service.ts`: Cron job định kỳ (@nestjs/schedule) quét các task sắp đến hạn trong vòng 24 giờ và sinh thông báo `TASK_DUE_SOON`.
+- `frontend/src/components/notifications/NotificationBell.tsx`: Chứa component chuông thông báo (Notification bell badge & dropdown menu).
 
 ---
 
@@ -54,8 +55,9 @@ Tài liệu này đặc tả chi tiết module Thông báo (`backend/src/notific
    - Chưa có kết nối WebSocket Gateway hay Server-Sent Events (SSE) để đẩy thông báo thời gian thực ngay khi sự kiện phát sinh.
 2. **Tự động Bỏ qua Hành động của Chính Mình**:
    - Trong `NotificationService.createNotification`, hệ thống kiểm tra: nếu `actorId && userId === actorId`, service lập tức trả về `null` và không tạo bản ghi nào. Ví dụ: khi bạn tự tạo task và tự gán cho mình, hoặc tự bình luận vào task của mình, hệ thống sẽ không sinh thông báo rác gửi lại cho chính bạn.
-3. **Enum `TASK_DUE_SOON` Chưa Có Tiến trình Quét**:
-   - Enum `TASK_DUE_SOON` đã tồn tại trong database migration `backend/prisma/migrations/20261101000000_notifications/`. Tuy nhiên, trong mã nguồn hiện tại **chưa có scheduler/worker nào quét định kỳ** các task sắp đến hạn để gọi tạo thông báo này (hướng xử lý dự kiến là cron job nội bộ `@nestjs/schedule`, xem [`docs/project/roadmap.md`](../project/roadmap.md)).
+3. **Tiến trình Quét Tự động TASK_DUE_SOON (Đã Hoàn tất)**:
+   - Sử dụng `TaskDueSchedulerService` kết hợp `@nestjs/schedule` chạy định kỳ 30 phút một lần.
+   - Tự động sinh thông báo in-app nhắc nhở cho người được giao hoặc người tạo task khi hạn hoàn thành (`dueAt`) rơi vào khoảng [now, now + 24h], đi kèm cơ chế kiểm tra deduplication 24 giờ để tránh spam thông báo lặp lại.
 
 ---
 
@@ -63,3 +65,4 @@ Tài liệu này đặc tả chi tiết module Thông báo (`backend/src/notific
 
 - **Unit Test Controller**: `backend/src/notifications/notification.controller.spec.ts` (kiểm thử các endpoint danh sách, đánh dấu đọc 1 tin và đánh dấu đọc tất cả).
 - **Unit Test Service**: `backend/src/notifications/notification.service.spec.ts` (kiểm thử logic `list`, `markAsRead`, `markAllAsRead`, `createNotification` và kiểm tra logic bỏ qua actor trùng recipient).
+- **Unit Test Scheduler**: `backend/src/notifications/task-due-scheduler.service.spec.ts` (kiểm thử logic quét task sắp đến hạn, phân bổ người nhận, cơ chế deduplication và xử lý lỗi không làm gián đoạn tiến trình).

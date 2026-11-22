@@ -8,6 +8,7 @@ interface AuthContextValue {
   sessionError: string;
   signIn(user: User, accessToken: string): void;
   signOut(): Promise<void>;
+  updateUser(updated: Partial<User>): void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,6 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authApi.logout();
       setAccessToken(null);
       setUser(null);
+    },
+    updateUser(updated) {
+      setUser((prev) => (prev ? { ...prev, ...updated } : null));
     },
   }), [ready, sessionError, user]);
 
