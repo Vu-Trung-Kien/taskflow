@@ -52,17 +52,7 @@ Tài liệu này ghi nhận kế hoạch phát triển các tính năng nghiệp
 
 ---
 
-## 5. Nâng cấp Trải nghiệm Giao diện Frontend `[CHƯA LÀM]`
-
-- **Tách module mã nguồn `App.tsx`**: Tái cấu trúc thành các thư mục chuẩn `components/`, `pages/`, `hooks/`, `context/` để giảm độ phức tạp của component chính.
-- **Hỗ trợ sắp xếp thứ tự tùy ý trên Kanban Board** `[ĐÃ HOÀN TẤT]`: Bổ sung trường `position` vào bảng `tasks` và migration, tích hợp Fractional Indexing trên `KanbanBoard.tsx` cho phép kéo thả đổi thứ tự ưu tiên trong cột lẫn đổi trạng thái liên cột.
-- **Tìm kiếm và bộ lọc nâng cao**: Tìm kiếm từ khóa theo tiêu đề, lọc đa điều kiện theo người thực hiện và khoảng ngày hết hạn.
-- **Thông báo Toast**: Hiển thị popup thông báo ngắn phản hồi trạng thái thành công/lỗi thay cho thông báo tĩnh.
-- **Thanh tiến trình tải tệp**: Hiển thị phần trăm tiến độ khi upload tệp đính kèm kích thước lớn lên S3.
-
----
-
-## 6. Hạ tầng Vận hành, DevOps & Bảo mật
+## 5. Hạ tầng Vận hành, DevOps & Bảo mật
 
 - **Triển khai Frontend Production bằng Caddy** `[CHƯA LÀM]`:
   - Đóng gói bản build static của React.

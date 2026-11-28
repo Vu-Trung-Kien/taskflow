@@ -74,7 +74,7 @@ erDiagram
         text description "Mô tả chi tiết"
         task_status status "TODO, IN_PROGRESS, DONE, BLOCKED"
         task_priority priority "LOW, MEDIUM, HIGH, URGENT"
-        float8 position "Vị trí sắp xếp Kanban (Fractional Indexing)"
+        float8 position "Vị trí sắp xếp công việc"
         timestamptz due_at "Hạn chót hoàn thành"
         timestamptz deleted_at "Thời điểm xóa mềm (null = hoạt động)"
         timestamptz created_at
@@ -156,7 +156,7 @@ Nhằm đảm bảo tốc độ truy vấn khi dữ liệu tăng trưởng, các
 | `project_members` | `project_members_user_id_idx` (`user_id`) | Lấy nhanh toàn bộ dự án mà một người dùng tham gia. |
 | `project_members` | `project_members_project_id_role_idx` (`project_id`, `role`) | Kiểm tra vai trò và tìm chủ sở hữu (`OWNER`) của dự án. |
 | `tasks` | `tasks_project_id_id_key` (`project_id`, `id` UNIQUE) | Ràng buộc then chốt đảm bảo dữ liệu phụ thuộc (sub-task, comment, attachment) không bao giờ bị lẫn chéo dự án. |
-| `tasks` | `tasks_project_id_status_deleted_at_idx` (`project_id`, `status`, `deleted_at`) | Tối ưu hiển thị bảng kéo-thả Kanban và lọc task đang hoạt động. |
+| `tasks` | `tasks_project_id_status_deleted_at_idx` (`project_id`, `status`, `deleted_at`) | Tối ưu lọc task đang hoạt động theo trạng thái. |
 | `tasks` | `tasks_project_id_due_at_idx` (`project_id`, `due_at`) | Thống kê task quá hạn và sắp đến hạn cho Dashboard metrics. |
 | `tasks` | `tasks_assignee_id_status_idx` (`assignee_id`, `status`) | Tính toán khối lượng công việc phân bổ theo từng thành viên. |
 | `tasks` | `tasks_parent_task_id_idx` (`parent_task_id`) | Truy vấn danh sách công việc con (sub-tasks). |
@@ -172,7 +172,7 @@ Nhằm đảm bảo tốc độ truy vấn khi dữ liệu tăng trưởng, các
 
 ## 4. Vòng đời Trạng thái Thực thể (State Lifecycles)
 
-### 4.1. Vòng đời Trạng thái Công việc (Task Status & Kanban)
+### 4.1. Vòng đời Trạng thái Công việc (Task Status)
 ```text
       ┌───────────────┐
       │     TODO      │ ◄──────────┐
@@ -188,10 +188,10 @@ Nhằm đảm bảo tốc độ truy vấn khi dữ liệu tăng trưởng, các
       │     DONE      │  │    BLOCKED    │
       └───────────────┘  └───────────────┘
 ```
-- **Quy tắc chuyển đổi**: Người dùng giữ vai trò `OWNER` hoặc `MEMBER` có thể tự do chuyển đổi giữa 4 trạng thái `TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`. Khi kéo-thả trên giao diện Kanban, API gửi trạng thái mới qua `PATCH /projects/:projectId/tasks/:taskId`.
+- **Quy tắc chuyển đổi**: Người dùng giữ vai trò `OWNER` hoặc `MEMBER` có thể tự do chuyển đổi giữa 4 trạng thái `TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`. Giao diện gửi trạng thái mới qua `PATCH /projects/:projectId/tasks/:taskId`.
 
 ### 4.2. Vòng đời Xóa mềm Công việc (Task Soft Deletion)
-- **Hoạt động (`deletedAt = null`)**: Trạng thái mặc định khi tạo mới. Task hiển thị trên danh sách chính, bảng Kanban và tính vào Dashboard metrics.
+- **Hoạt động (`deletedAt = null`)**: Trạng thái mặc định khi tạo mới. Task hiển thị trên danh sách chính và tính vào Dashboard metrics.
 - **Xóa mềm (`deletedAt = timestamp`)**: Đưa task vào danh sách "Đã xóa" (`includeDeleted=true`). Dữ liệu bình luận, tệp đính kèm và sub-task liên quan được bảo toàn nguyên vẹn.
 - **Khôi phục (`deletedAt = null`)**: Đưa task trở lại bảng làm việc bình thường.
 

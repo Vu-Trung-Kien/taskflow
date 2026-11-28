@@ -1,6 +1,6 @@
-# Module Công việc & Bảng Kanban (Tasks Module)
+# Module Công việc (Tasks Module)
 
-Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/`) của TaskFlow: quản lý vòng đời task, công việc con một cấp, bảng kéo-thả Kanban, cơ chế xóa mềm/khôi phục, tích hợp kích hoạt thông báo sự kiện và xuất dữ liệu CSV chuẩn UTF-8.
+Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/`) của TaskFlow: quản lý vòng đời task, công việc con một cấp, cơ chế xóa mềm/khôi phục, tích hợp kích hoạt thông báo sự kiện và xuất dữ liệu CSV chuẩn UTF-8.
 
 ---
 
@@ -28,7 +28,7 @@ Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/
 - `POST /projects/:projectId/tasks/:taskId/restore`: Khôi phục công việc đã xóa mềm (cập nhật `deletedAt = null`). Chỉ `OWNER` và `MEMBER`.
 
 ### 2.2. Dịch vụ Xuất bản (Exported Providers)
-- `TaskService`: Cung cấp các thao tác nghiệp vụ trên task, xử lý tính toán `position` Kanban, xóa mềm và xuất file CSV.
+- `TaskService`: Cung cấp các thao tác nghiệp vụ trên task, xử lý thứ tự danh sách, xóa mềm và xuất file CSV.
 
 ---
 
@@ -50,7 +50,6 @@ Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/
 - `backend/src/tasks/task.controller.ts`: Tiếp nhận HTTP requests, kiểm tra guard xác thực và gọi service.
 - `backend/src/tasks/task.service.ts`: Toàn bộ logic nghiệp vụ task, sub-task, soft-delete, tính vị trí `position`, export CSV và trigger notification.
 - `backend/src/tasks/dto/*.dto.ts`: Bộ DTO kiểm tra dữ liệu đầu vào (`CreateTaskDto`, `UpdateTaskDto`, `ListTasksDto`).
-- `frontend/src/components/tasks/KanbanBoard.tsx`: Component bảng kéo-thả Kanban, xử lý Fractional Indexing, drop indicators và optimistic update.
 
 ---
 
@@ -62,9 +61,7 @@ Tài liệu này đặc tả chi tiết module Công việc (`backend/src/tasks/
    - Một khi công việc đã được tạo, bạn **không thể thay đổi task cha** bằng lệnh cập nhật (`PATCH /tasks/:id`). Nếu DTO có chứa trường `parentTaskId`, `TaskService.update` sẽ lập tức từ chối với lỗi 400 (`Task parent cannot be modified.`).
 3. **Người được giao (Assignee) bắt buộc phải là Thành viên Dự án**:
    - Khi gán `assigneeId`, service luôn kiểm tra sự tồn tại của người dùng trong bảng `project_members` của chính dự án đó. Không thể gán một công việc cho người ngoài dự án.
-4. **Sắp xếp Thứ tự Tùy ý trên Bảng Kanban (Đã Hoàn tất)**:
-   - Bảng `tasks` lưu trường `position Float @default(65536.0)`. Khi kéo-thả trên `KanbanBoard.tsx`, hệ thống tính toán vị trí mới bằng thuật toán Fractional Indexing (`(prevPos + nextPos) / 2`), hỗ trợ cả di chuyển giữa các cột trạng thái lẫn kéo đổi thứ tự ưu tiên trong cùng một cột mà không cần cập nhật lại toàn bộ các thẻ khác.
-5. **Định dạng Xuất CSV và UTF-8 BOM**:
+4. **Định dạng Xuất CSV và UTF-8 BOM**:
    - Endpoint `/tasks/export` trả về chuỗi CSV có đính kèm UTF-8 BOM (`\uFEFF`) ở đầu stream. Mục đích là để Microsoft Excel tự động nhận diện bảng mã tiếng Việt có dấu mà không bị lỗi font. Nếu đọc file này bằng các script tự động bên ngoài, cần lưu ý xử lý ký tự BOM này.
 
 ---

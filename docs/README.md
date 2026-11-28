@@ -32,7 +32,7 @@ docs/
 ### 2.2. Kiến trúc Hệ thống (`architecture/`)
 - [**Thiết kế Kiến trúc Tổng thể**](architecture/system-design.md): Sơ đồ tầng hệ thống, tương tác giữa Client - API - Database - Object Storage, luồng dữ liệu và quyết định kỹ thuật cốt lõi.
 - [**Thiết kế Cơ sở Dữ liệu**](architecture/database.md): Mô hình ERD, định nghĩa bảng, quan hệ khóa ngoại, index hiệu năng và cascade rules (PostgreSQL 16 & Prisma 7).
-- [**Đặc tả Các Luồng Hoạt động Trọng yếu**](architecture/flows.md): Chi tiết 5 luồng cốt lõi (Auth rotation, Task & Notifications, Kanban drag-drop, Presigned S3 upload, CI/CD SSM release) kèm Sequence Diagram Mermaid.
+- [**Đặc tả Các Luồng Hoạt động Trọng yếu**](architecture/flows.md): Chi tiết 4 luồng cốt lõi (Auth rotation, Task & Notifications, Presigned S3 upload, CI/CD SSM release) kèm Sequence Diagram Mermaid.
 - [**Sơ đồ Luồng Điều hướng UI/UX**](architecture/ui-ux-navigation-flow.md): Sơ đồ luồng người dùng (User Journey Flow), cấu trúc màn hình, quan hệ Route ↔ Component và ma trận phân quyền RBAC.
 - [**Quyết định Kiến trúc (ADR)**](architecture/decisions.md): Ghi nhận các quyết định kiến trúc then chốt (ADR-001: Frontend Production Caddy; ADR-002: Đơn máy chủ EC2 + Postgres trên EBS gp3).
 - [**Kiến trúc An toàn Thông tin**](architecture/security.md): Băm Argon2id, SHA-256 hash refresh token, chống replay attack, presigned URL policy và quản lý secret qua AWS SSM.
@@ -40,7 +40,7 @@ docs/
 ### 2.3. Chi tiết Module Nghiệp vụ (`modules/`)
 - [**Module Xác thực & Phiên**](modules/auth.md): Đăng ký, đăng nhập, xoay vòng Refresh token SHA-256, thu hồi phiên do replay attack và thời hạn tuyệt đối 30 ngày.
 - [**Module Dự án & Phân quyền**](modules/projects.md): Vòng đời dự án, phân quyền RBAC (`OWNER`, `MEMBER`, `VIEWER`), chuyển quyền sở hữu nguyên tử và Dashboard metrics.
-- [**Module Công việc & Kanban**](modules/tasks.md): Quản lý task, sub-task 1 cấp, soft-delete, cơ chế kéo-thả Kanban và xuất CSV UTF-8 kèm BOM.
+- [**Module Công việc**](modules/tasks.md): Quản lý task, sub-task 1 cấp, soft-delete, và xuất CSV UTF-8 kèm BOM.
 - [**Module Cộng tác & Đính kèm Tệp**](modules/collaboration.md): Bình luận công việc và luồng upload/download tệp đính kèm qua S3 Presigned URL + xác nhận HeadObject.
 - [**Module Thông báo In-app**](modules/notifications.md): Kích hoạt thông báo theo sự kiện, API đọc/đánh dấu đã đọc và giao diện chuông trên frontend.
 - [**Module Giám sát Trạng thái & Phiên bản**](modules/health-and-telemetry.md): Probe liveness, readiness kiểm tra kết nối database và endpoint metadata Git SHA / build time.

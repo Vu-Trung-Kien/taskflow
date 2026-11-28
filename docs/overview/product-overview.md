@@ -19,8 +19,8 @@ Quyền hạn của người dùng trong hệ thống gắn liền với từng 
 | Vai trò | Trách nhiệm chính | Quyền hạn trên dữ liệu dự án |
 |---|---|---|
 | **Owner** *(Chủ dự án)* | Người khởi tạo hoặc người tiếp nhận quyền quản trị dự án. | - Toàn quyền cấu hình dự án, lưu trữ (archive) và khôi phục (restore) dự án.<br>- Thêm/xóa thành viên, điều chỉnh vai trò và chuyển quyền sở hữu (`OWNER`).<br>- Quản lý toàn bộ task, sub-task, bình luận và tệp đính kèm của mọi thành viên. |
-| **Member** *(Thành viên)* | Người tham gia trực tiếp thực thi và cộng tác trong dự án. | - Xem thông tin dự án, danh sách thành viên, dashboard và xuất CSV.<br>- Tạo mới, chỉnh sửa, đổi trạng thái trên Kanban, xóa mềm và khôi phục công việc.<br>- Viết bình luận, tải lên/tải xuống tệp đính kèm; sửa/xóa bình luận và tệp của chính mình. |
-| **Viewer** *(Người quan sát)* | Khách hàng, đối tác hoặc người theo dõi tiến độ. | - Chỉ có quyền đọc (Read-only): Xem dự án, danh sách task, bảng Kanban, bình luận, tệp đính kèm, dashboard metrics và xuất báo cáo CSV.<br>- Không được thực hiện bất kỳ thao tác thay đổi dữ liệu nào. |
+| **Member** *(Thành viên)* | Người tham gia trực tiếp thực thi và cộng tác trong dự án. | - Xem thông tin dự án, danh sách thành viên, dashboard và xuất CSV.<br>- Tạo mới, chỉnh sửa, đổi trạng thái, xóa mềm và khôi phục công việc.<br>- Viết bình luận, tải lên/tải xuống tệp đính kèm; sửa/xóa bình luận và tệp của chính mình. |
+| **Viewer** *(Người quan sát)* | Khách hàng, đối tác hoặc người theo dõi tiến độ. | - Chỉ có quyền đọc (Read-only): Xem dự án, danh sách task, bình luận, tệp đính kèm, dashboard metrics và xuất báo cáo CSV.<br>- Không được thực hiện bất kỳ thao tác thay đổi dữ liệu nào. |
 
 ---
 
@@ -41,16 +41,12 @@ Quyền hạn của người dùng trong hệ thống gắn liền với từng 
 - **Lưu trữ & Khôi phục**: Hỗ trợ lưu trữ dự án (`archivedAt`), đưa dự án về trạng thái chỉ đọc và có thể khôi phục khi cần thiết.
 - **Quản lý nhóm**: Thêm thành viên theo địa chỉ email đã có tài khoản, phân vai trò (`OWNER`, `MEMBER`, `VIEWER`), xóa thành viên hoặc chuyển quyền Owner sang thành viên khác.
 
-### 3.3. Quản lý Công việc, Sub-task & Bảng kéo-thả Kanban
+### 3.3. Quản lý Công việc và Sub-task
 - **CRUD Công việc**: Tạo và quản lý task với tiêu đề, mô tả chi tiết, người được giao (`assigneeId`), hạn hoàn thành (`dueAt`), trạng thái (`status`) và mức độ ưu tiên (`priority`).
 - **Trạng thái & Ưu tiên**:
   - Trạng thái công việc: `TODO` (Cần làm), `IN_PROGRESS` (Đang làm), `DONE` (Hoàn tất), `BLOCKED` (Bị chặn).
   - Mức độ ưu tiên: `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
 - **Công việc con (Sub-task)**: Hỗ trợ phân rã công việc con tối đa 1 cấp (`parentTaskId`), bắt buộc thuộc cùng dự án với task cha.
-- **Bảng kéo-thả trực quan Kanban Board**:
-  - Giao diện trực quan chia thành 4 cột tương ứng 4 trạng thái công việc (`frontend/src/App.tsx`).
-  - Hỗ trợ thao tác kéo-thả (HTML5 Drag & Drop) mượt mà để thay đổi trạng thái công việc tức thì với phản hồi optimistic UI.
-  - Hiển thị đầy đủ thẻ ưu tiên, hạn chót, tiến độ sub-task và avatar người thực hiện trên từng card.
 - **Xóa mềm & Khôi phục**: Thao tác xóa task chỉ cập nhật mốc thời gian `deletedAt`, cho phép Owner/Member dễ dàng lọc và khôi phục khi cần.
 
 ### 3.4. Cộng tác: Bình luận & Tệp đính kèm (Collaboration)
@@ -87,11 +83,9 @@ Quyền hạn của người dùng trong hệ thống gắn liền với từng 
 2. Hệ thống kiểm tra tài khoản tồn tại trong bảng `users` và tạo bản ghi `project_members` với vai trò được chọn (`MEMBER` hoặc `VIEWER`).
 3. Khi cần bàn giao quản lý, Owner chọn chức năng chuyển quyền; hệ thống thực hiện transaction hoán đổi: người nhận thành `OWNER`, Owner cũ chuyển về `MEMBER`.
 
-### 4.3. Luồng Quản lý Công việc trên Bảng Kanban
-1. Thành viên chọn chế độ xem "Bảng kéo-thả" (Kanban) trên màn hình dự án.
-2. Người dùng kéo thẻ công việc từ cột "Cần làm" (`TODO`) thả vào cột "Đang làm" (`IN_PROGRESS`) hoặc "Hoàn tất" (`DONE`).
-3. Giao diện cập nhật vị trí thẻ ngay lập tức (optimistic update), đồng thời gửi request `PATCH /projects/:projectId/tasks/:taskId` cập nhật trạng thái ở backend.
-4. Backend kiểm tra quyền ghi của người dùng, cập nhật database và tự động phát sinh thông báo sự kiện `TASK_STATUS_CHANGED` gửi cho người tạo và người phụ trách task.
+### 4.3. Luồng Cập nhật Trạng thái Công việc
+1. Thành viên mở công việc trong danh sách dự án và đổi trạng thái trong phần chi tiết.
+2. Giao diện gửi yêu cầu `PATCH /projects/:projectId/tasks/:taskId`. Backend kiểm tra quyền ghi, lưu trạng thái và phát thông báo `TASK_STATUS_CHANGED`.
 
 ### 4.4. Luồng Tải lên Tệp đính kèm an toàn
 1. Người dùng chọn tệp cần đính kèm trên giao diện chi tiết task.
@@ -109,7 +103,6 @@ Quyền hạn của người dùng trong hệ thống gắn liền với từng 
 | Xác thực Argon2id, JWT 15m, Refresh Token xoay vòng 30 ngày | **[ĐÃ CÓ]** | Hoàn tất ở Backend, Frontend và EC2 Production. |
 | CRUD Dự án, RBAC Owner/Member/Viewer, Chuyển quyền | **[ĐÃ CÓ]** | Hoàn tất ở Backend, Frontend và EC2 Production. |
 | CRUD Task/Sub-task 1 cấp, Soft-delete/Restore | **[ĐÃ CÓ]** | Hoàn tất ở Backend, Frontend và EC2 Production. |
-| Bảng kéo-thả trực quan Kanban Board | **[ĐÃ CÓ]** | Hoàn tất mã nguồn ở Frontend React và Backend API. |
 | Bình luận công việc & Upload tệp qua S3 Presigned URL | **[ĐÃ CÓ]** | Hoàn tất mã nguồn Backend & Frontend; local chạy SeaweedFS. |
 | Hệ thống Thông báo In-app (API & Giao diện chuông) | **[ĐÃ CÓ]** | Hoàn tất mã nguồn Backend & Frontend; kích hoạt theo 3 sự kiện. |
 | Dashboard Thống kê thời gian thực & Xuất báo cáo CSV | **[ĐÃ CÓ]** | Hoàn tất mã nguồn Backend & Frontend. |

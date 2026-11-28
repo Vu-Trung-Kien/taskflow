@@ -1,0 +1,28 @@
+services:
+  frontend:
+    image: ${TASKFLOW_FRONTEND_IMAGE:?Frontend image is required}
+    restart: unless-stopped
+    environment:
+      TASKFLOW_DOMAIN: ${TASKFLOW_DOMAIN:?Production domain is required}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  backend:
+    external: true
+    name: taskflow_default
+
+volumes:
+  caddy-data:
+  caddy-config:

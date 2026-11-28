@@ -1,0 +1,24 @@
+{$TASKFLOW_DOMAIN} {
+	@api path /api/auth /api/auth/* /api/projects /api/projects/* /api/notifications /api/notifications/* /api/health/live /api/health/ready /api/version
+	handle @api {
+		uri strip_prefix /api
+		reverse_proxy api:3000 {
+			header_down Set-Cookie "(?i)(;[[:space:]]*path=)/auth(;|$)" "$1/api/auth$2"
+		}
+	}
+
+	handle /api/* {
+		respond 404
+	}
+
+	handle /assets/* {
+		root * /srv
+		file_server
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

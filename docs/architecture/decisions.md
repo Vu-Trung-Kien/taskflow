@@ -32,10 +32,9 @@ Frontend của TaskFlow hiện tại được viết bằng React 19, TypeScript
   2. Định tuyến (reverse proxy) các request có prefix `/api/` (hoặc trực tiếp các endpoint backend) về container API NestJS.
   3. Tự động kích hoạt HTTPS khi có domain công khai `[CHƯA LÀM - Chưa quyết định domain]`.
 
-### Kế hoạch thực hiện `[CHƯA LÀM]`
-- Thêm cấu hình service Caddy và `Caddyfile` vào kịch bản Compose production.
-- Bổ sung bước build frontend vào workflow CI/CD GitHub Actions và copy artifact vào thư mục phục vụ của Caddy trên EC2.
+### Quy trình phát hành
 
+Workflow **Release frontend** đóng gói React và Caddy thành image, phát hành qua ECR và SSM. Xem [điều kiện và quy trình phát hành](../operations/deployment.md#5-phát-hành-frontend-production-adr-001).
 
 ---
 

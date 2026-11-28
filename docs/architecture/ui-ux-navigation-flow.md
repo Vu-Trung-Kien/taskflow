@@ -44,13 +44,9 @@ flowchart TD
         TabSelect -->|Tab 3| MembersTab["Tab: Thành viên (Members)"]
         
         %% Nhánh Tasks
-        TasksTab --> ViewToggle{Chế độ xem}
-        ViewToggle -->|Kanban| KanbanBoard["Bảng kéo-thả Kanban (4 cột)"]
-        ViewToggle -->|List| ListView["Danh sách công việc"]
-        ViewToggle -->|Thùng rác| TrashList["Danh sách việc đã xóa mềm"]
+        TasksTab --> ListView["Danh sách công việc"]
+        TasksTab -->|Thùng rác| TrashList["Danh sách việc đã xóa mềm"]
         
-        KanbanBoard -->|Kéo-thả| MoveStatus["Cập nhật trạng thái trực tiếp"]
-        KanbanBoard -->|Click vào thẻ| TaskDrawer["[Drawer] Chi tiết công việc"]
         ListView -->|Click vào hàng| TaskDrawer
         
         TaskDrawer --> EditTaskInfo["Sửa tiêu đề / mô tả / thuộc tính"]
@@ -118,19 +114,15 @@ flowchart TD
 Màn hình trung tâm của TaskFlow được tổ chức thành 3 Tab chức năng:
 
 #### Tab 1: Công việc (Tasks)
-- **Chế độ Bảng Kanban (Kanban Board)**:
-  - 4 cột trực quan: **TODO (Cần làm)**, **IN_PROGRESS (Đang làm)**, **DONE (Hoàn tất)**, **BLOCKED (Bị chặn)**.
-  - Người dùng có quyền `OWNER` hoặc `MEMBER` có thể kéo thả thẻ giữa các cột. Cột đích sẽ sáng viền xanh kèm hiệu ứng glow để người dùng nhận biết vùng thả hợp lệ.
-  - Mỗi thẻ hiển thị: Mức ưu tiên (Khẩn cấp, Cao, Trung bình, Thấp), Tiêu đề, Mô tả vắn tắt, Hạn chót (đổi sang màu đỏ nếu quá hạn), Tiến độ việc con (`☑ 1/3`), Avatar người phụ trách.
-- **Chế độ Danh sách (List View)**:
-  - Dành cho người thích quản lý dạng bảng truyền thống với các cột: Trạng thái, Tiêu đề, Mức độ ưu tiên, Người phụ trách, Hạn chót.
+- **Danh sách công việc**:
+  - Hiển thị các cột: Trạng thái, Tiêu đề, Mức độ ưu tiên, Người phụ trách, Hạn chót.
 - **Thùng rác (Deleted Tasks)**:
   - Bật toggle "Thùng rác" để xem các công việc đã bị xóa mềm và thực hiện "Khôi phục" chỉ với 1 click.
 - **Bộ lọc & Xuất CSV**:
   - Lọc theo Trạng thái hoặc Mức ưu tiên độc lập.
   - Nút **Xuất CSV** tải xuống ngay file `taskflow-[ten-du-an]-[ngay].csv` đúng theo bộ lọc đang chọn.
 - **Thanh trượt chi tiết công việc (Task Details Drawer)**:
-  - Click vào bất kỳ công việc nào ở Kanban hoặc List sẽ mở Drawer trượt mượt mà từ cạnh phải màn hình.
+  - Click vào bất kỳ công việc nào trong danh sách sẽ mở Drawer trượt mượt mà từ cạnh phải màn hình.
   - Cho phép chỉnh sửa tiêu đề, mô tả, thay đổi trạng thái, mức ưu tiên, phân công người làm, hạn chót.
   - **Quản lý việc con (Subtasks)**: Đánh dấu hoàn thành, xem thanh tiến độ %, thêm việc con mới, click vào việc con để mở chi tiết sâu hơn.
   - **Bình luận (Comments)**: Dòng thời gian thảo luận của nhóm, cho phép người viết hoặc chủ dự án sửa/xóa bình luận.

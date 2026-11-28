@@ -43,7 +43,7 @@ Tài liệu này cung cấp danh mục đặc tả toàn bộ các endpoint REST
 |---|---|---|
 | Xác thực | `400`, `401`, `409`, `429` | DTO xác thực sai; sai email/mật khẩu; email trùng; refresh/replay phiên; rate limiting. |
 | Dự án & thành viên | `400`, `401`, `403`, `404`, `409` | Thiếu tên dự án; không phải Owner; project/task không tồn tại; thành viên đã tồn tại; cấm thao tác với Owner. |
-| Công việc & Kanban | `400`, `401`, `403`, `404`, `409` | Không có field cập nhật; `position` không phải số hợp lệ; assignee không thuộc project; task cha/soft-delete không hợp lệ. |
+| Công việc | `400`, `401`, `403`, `404`, `409` | Không có field cập nhật; `position` không phải số hợp lệ; assignee không thuộc project; task cha/soft-delete không hợp lệ. |
 | Bình luận & đính kèm | `400`, `401`, `403`, `404`, `409` | Content quá dài; file vượt 10 MiB/MIME không cho phép; không phải tác giả hoặc Owner; object không tồn tại. |
 | Notifications | `401`, `404` | Phiên hết hạn hoặc notification không thuộc người dùng hiện tại. |
 | Health/Version | `200`, `503`, `500` | API sống/chạy bình thường, database chưa sẵn sàng, hoặc lỗi runtime. |
@@ -206,7 +206,7 @@ Các dòng dưới đây mô tả **điều kiện cụ thể** khiến từng e
 | `POST /projects/:projectId/transfer-owner` | `404` | Project không tồn tại hoặc target chưa là thành viên của project. |
 | `POST /projects/:projectId/transfer-owner` | `409` | Target là chính Owner hiện tại. |
 
-### 3.3. Công việc và Kanban
+### 3.3. Công việc
 
 | API | Mã | Ý nghĩa cụ thể |
 |---|---|---|
