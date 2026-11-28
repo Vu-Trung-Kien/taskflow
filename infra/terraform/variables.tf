@@ -80,5 +80,5 @@ variable "backup_retention_days" {
 variable "attachment_cors_origins" {
   description = "Browser origins allowed to use presigned S3 requests."
   type        = list(string)
-  default     = ["http://localhost:5173"]
+  default     = ["https://taskflowvutrungkien.duckdns.org"]
 }
