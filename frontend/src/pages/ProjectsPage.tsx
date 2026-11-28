@@ -23,7 +23,7 @@ function messageOf(error: unknown): string {
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [includeArchived, setIncludeArchived] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,7 +34,7 @@ export function ProjectsPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await projectApi.list(includeArchived);
+      const data = await projectApi.list(true);
       setProjects(data);
     } catch (requestError) {
       setError(messageOf(requestError));
@@ -45,7 +45,7 @@ export function ProjectsPage() {
 
   useEffect(() => {
     void loadProjects();
-  }, [includeArchived]);
+  }, []);
 
   async function handleRestore(projectId: string) {
     setError('');
@@ -61,19 +61,19 @@ export function ProjectsPage() {
   }
 
   const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) return projects;
-    const q = searchQuery.toLowerCase();
-    return projects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.description && p.description.toLowerCase().includes(q)),
+    const query = searchQuery.trim().toLowerCase();
+    return projects.filter((project) =>
+      Boolean(project.archivedAt) === showArchived &&
+      (!query ||
+        project.name.toLowerCase().includes(query) ||
+        project.description?.toLowerCase().includes(query)),
     );
-  }, [projects, searchQuery]);
+  }, [projects, searchQuery, showArchived]);
 
   return (
     <AppLayout
-      includeArchived={includeArchived}
-      onToggleArchived={setIncludeArchived}
+      includeArchived={showArchived}
+      onToggleArchived={setShowArchived}
       onOpenCreateProject={() => setCreateModalOpen(true)}
       breadcrumbs={<span className="tf-breadcrumb-current">Dự án của bạn</span>}
     >
@@ -83,10 +83,10 @@ export function ProjectsPage() {
           <div className="tf-page-header-content">
             <span className="tf-eyebrow">KHÔNG GIAN LÀM VIỆC</span>
             <h1 className="tf-page-title">
-              {includeArchived ? 'Dự án đã lưu trữ' : 'Dự án của bạn'}
+              {showArchived ? 'Dự án đã lưu trữ' : 'Dự án của bạn'}
             </h1>
             <p className="tf-page-subtitle">
-              {includeArchived
+              {showArchived
                 ? 'Các dự án đã hoàn thành hoặc tạm dừng lưu trữ. Bạn có thể khôi phục lại bất kỳ lúc nào.'
                 : 'Tập hợp toàn bộ công việc, tài liệu và tiến độ cộng tác của đội ngũ ở cùng một nơi.'}
             </p>
@@ -96,14 +96,14 @@ export function ProjectsPage() {
             <label className="tf-toggle-pill">
               <input
                 type="checkbox"
-                checked={includeArchived}
-                onChange={(e) => setIncludeArchived(e.target.checked)}
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
               />
               <ArchiveIcon size={15} />
               <span>Hiện dự án đã lưu trữ</span>
             </label>
 
-            {!includeArchived && (
+            {!showArchived && (
               <Button
                 variant="primary"
                 icon={<PlusIcon size={16} />}
@@ -159,7 +159,7 @@ export function ProjectsPage() {
         ) : (
           <div className="tf-project-grid">
             {/* Create Project Interactive Card (in primary view) */}
-            {!includeArchived && !searchQuery && (
+            {!showArchived && !searchQuery && (
               <div
                 className="tf-project-create-card"
                 onClick={() => setCreateModalOpen(true)}
@@ -199,7 +199,7 @@ export function ProjectsPage() {
                       </Button>
                     }
                   />
-                ) : includeArchived ? (
+                ) : showArchived ? (
                   <EmptyState
                     icon={<ArchiveIcon size={32} />}
                     title="Kho lưu trữ trống"
