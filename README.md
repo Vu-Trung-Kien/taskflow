@@ -1,62 +1,57 @@
 # TaskFlow
 
-TaskFlow là ứng dụng web quản lý dự án và công việc, đồng thời là dự án thực hành quy trình DevOps trên AWS. Repository có backend NestJS và frontend React; triển khai backend container trên một EC2.
+TaskFlow là ứng dụng web quản lý dự án và công việc theo nhóm, đồng thời là dự án thực hành xây dựng, phát hành và vận hành phần mềm trên AWS.
 
-## Trạng thái hiện tại
+**[Mở ứng dụng](https://taskflowvutrungkien.duckdns.org)** · [Hướng dẫn phát triển](docs/development/local-setup.md) · [Tham chiếu API](docs/api/reference.md) · [Hướng dẫn triển khai](docs/operations/deployment.md)
 
-Backend MVP đã được triển khai lên EC2:
+## Chức năng
 
-- Đăng ký/đăng nhập với mật khẩu băm Argon2id.
-- Access JWT có thời hạn 15 phút; refresh token được xoay vòng, chỉ lưu hash trong PostgreSQL; logout và phát hiện replay thu hồi phiên. Mỗi phiên đăng nhập có giới hạn tuyệt đối 30 ngày.
-- Phân quyền dự án theo Owner, Member, Viewer.
-- CRUD dự án và thành viên; archive/restore dự án; chuyển quyền Owner.
-- CRUD task và sub-task một cấp; trạng thái `TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`; mức ưu tiên `LOW`, `MEDIUM`, `HIGH`, `URGENT`; hạn hoàn thành, người thực hiện; soft-delete/restore task.
-- Health endpoints `/health/live`, `/health/ready` và thông tin build `/version`.
+- **Tài khoản** — đăng ký, đăng nhập, cập nhật hồ sơ và đổi mật khẩu. Access token có thời hạn 15 phút. Refresh token được xoay vòng và phiên có giới hạn 30 ngày.
+- **Dự án và phân quyền** — quản lý thành viên theo vai trò Owner, Member và Viewer. Chủ dự án có thể chuyển quyền sở hữu, lưu trữ và khôi phục dự án.
+- **Công việc** — quản lý công việc và công việc con một cấp, phân công, đặt hạn chót, lọc theo trạng thái hoặc mức ưu tiên, xóa mềm và khôi phục.
+- **Cộng tác** — bình luận, đính kèm tệp tối đa 10 MiB qua URL ký trước và nhận thông báo trong ứng dụng cho các sự kiện liên quan, gồm cả nhắc việc sắp đến hạn.
+- **Báo cáo** — theo dõi tiến độ và khối lượng công việc theo thành viên, xuất danh sách công việc dưới dạng CSV.
 
-Frontend MVP React + TypeScript + Vite bao phủ đăng nhập/đăng ký, quản lý dự án/thành viên, task/sub-task, bình luận, tệp đính kèm, dashboard và xuất CSV. Frontend chưa được triển khai production. API bình luận, attachment, metrics và CSV có trong mã nguồn; việc xác minh tích hợp object storage thực tế và phát hành các chức năng collaboration lên production chưa hoàn tất. Backend còn thiếu thông báo/email, task lặp và feature flags. Chưa thiết lập HTTPS/domain công khai, chưa diễn tập backup/restore, chưa cấu hình monitoring/cảnh báo hoặc kiểm thử tải; API chưa được công khai qua reverse proxy.
+## Kiến trúc
 
-Các giới hạn xác thực và tệp đính kèm được chuẩn hóa như sau:
+| Thành phần | Công nghệ |
+| --- | --- |
+| Giao diện | React, TypeScript, Vite |
+| API | NestJS, TypeScript, Prisma 7 |
+| Dữ liệu | PostgreSQL 16 trên EBS |
+| Tệp đính kèm | Amazon S3 trên AWS, SeaweedFS tương thích S3 ở môi trường local |
+| Hạ tầng và phát hành | Terraform, AWS EC2, ECR, Systems Manager, GitHub Actions |
 
-| Quy ước | Giá trị |
-|---|---|
-| Access JWT | 15 phút |
-| Refresh token | Xoay vòng sau mỗi lần dùng thành công; chỉ lưu SHA-256 hash |
-| Thời hạn tuyệt đối của phiên | 30 ngày; refresh không gia hạn |
-| Kích thước tệp tối đa | 10 MiB |
-| Thời hạn presigned URL | 5 phút |
-| Trạng thái task | `TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED` |
-| Mức ưu tiên | `LOW`, `MEDIUM`, `HIGH`, `URGENT` |
+Trên AWS, Caddy phục vụ bản build React qua HTTPS và chuyển tiếp tuyến `/api/*` đến NestJS. Frontend và backend chạy trong hai Docker Compose project trên cùng EC2, kết nối qua mạng Docker dùng chung. PostgreSQL lưu dữ liệu trên EBS và không mở cổng công khai. [Thiết kế hệ thống](docs/architecture/system-design.md) · [Mô hình dữ liệu](docs/architecture/database.md)
 
-## Công nghệ
+## Phát triển local
 
-- **Backend:** NestJS, TypeScript, Prisma 7.
-- **Database:** PostgreSQL 16.
-- **Local object storage:** SeaweedFS với S3 API.
-- **Email local:** MailHog.
-- **Local development:** Docker Compose.
-- **AWS:** EC2, ECR, EBS, S3, IAM/OIDC, Systems Manager; hạ tầng được quản lý bằng Terraform.
-- **CI/CD:** GitHub Actions chạy lint, typecheck, unit/e2e tests, build image và Trivy; CD phát hành qua ECR và SSM.
+Cần **Node.js 24**, npm và Docker Compose v2. Hướng dẫn dưới đây chạy PostgreSQL và SeaweedFS bằng Docker, còn NestJS và Vite chạy trực tiếp trên máy để tự tải lại khi sửa mã.
 
-## Chạy môi trường local
-
-1. Sao chép `.env.example` thành `.env` ở thư mục gốc.
-2. Đặt `JWT_ACCESS_SECRET` ngẫu nhiên, ít nhất 32 byte. Chỉ dùng mật khẩu mẫu trong `.env.example` cho môi trường local; không dùng làm credential production.
-3. Khởi chạy các service:
+**1. Chuẩn bị cấu hình và dịch vụ phụ thuộc.** Từ thư mục gốc của repo:
 
 ```bash
-docker compose up --build
+test -f .env || cp .env.example .env
+test -f backend/.env || cp backend/.env.example backend/.env
 ```
 
-API ở `http://localhost:3000`. PostgreSQL, MailHog và SeaweedFS chỉ bind vào loopback. Compose khởi chạy PostgreSQL. Để chạy lệnh Prisma từ máy host, sao chép `backend/.env.example` thành `backend/.env` và đặt `DATABASE_URL` khớp với thông tin PostgreSQL trong file `.env` gốc. Sau đó áp dụng migration:
+Trong `backend/.env`, đặt `JWT_ACCESS_SECRET` bằng giá trị ngẫu nhiên tạo từ `openssl rand -hex 32`. Đặt `DATABASE_URL` và các thông tin S3 khớp với `.env` ở thư mục gốc. Vì NestJS chạy trên máy local, đặt `S3_ENDPOINT=http://localhost:8333` trong `backend/.env`.
+
+```bash
+docker compose up -d --wait postgres seaweedfs
+```
+
+**2. Khởi động backend.**
 
 ```bash
 cd backend
 npm ci
-npm run db:generate
-npm run db:migrate:dev
+npm run db:generate -- --config prisma7.config.ts
+npm run db:migrate:deploy -- --config prisma7.config.ts
+npm run start:dev
 ```
 
-Khi API đã chạy, mở terminal khác để chạy frontend. Vite proxy các route API về `localhost:3000`, vì vậy cookie refresh vẫn cùng origin trong môi trường dev:
+**3. Khởi động frontend.** Mở terminal khác ở thư mục gốc của repo:
 
 ```bash
 cd frontend
@@ -64,66 +59,40 @@ npm ci
 npm run dev
 ```
 
-Mở địa chỉ Vite hiển thị trong terminal. Yêu cầu cấu hình CORS bucket S3-compatible và cách triển khai production được ghi trong [`frontend/README.md`](frontend/README.md).
+Mở [giao diện local](http://localhost:5173). Vite chuyển tiếp các tuyến API tới NestJS ở cổng 3000. Tài liệu local có thêm cấu hình CORS cho tệp đính kèm. [Thiết lập local](docs/development/local-setup.md) · [Cấu hình frontend](frontend/README.md)
 
-## API chính
+## Kiểm thử
 
-Các endpoint nghiệp vụ cần header `Authorization: Bearer <access-token>`, ngoại trừ đăng ký, đăng nhập, refresh, logout và health/version:
+Sau khi cài dependency và tạo Prisma Client như trên, chạy các lệnh trong thư mục tương ứng.
 
-- `POST /auth/register`, `POST /auth/login`
-- `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`
-- `/projects` — CRUD dự án; `DELETE /projects/:projectId` archive, `POST /projects/:projectId/restore` khôi phục.
-- `GET /projects/:projectId/metrics` — thống kê tiến độ, phân bố trạng thái, mức ưu tiên, task quá hạn và năng suất thành viên; mọi thành viên dự án được xem.
-- `/projects/:projectId/members` — quản lý membership; chỉ Owner có thể quản lý thành viên và chuyển quyền.
-- `/projects/:projectId/tasks` — task/sub-task; Owner và Member được ghi, Viewer chỉ đọc.
-- `GET /projects/:projectId/tasks/export` — xuất danh sách công việc của dự án ra file CSV chuẩn UTF-8 kèm BOM; mọi thành viên dự án được xuất.
-- `/projects/:projectId/tasks/:taskId/comments` — thành viên đọc; Owner/Member tạo bình luận; tác giả sửa/xóa bình luận của mình, Owner có thể quản lý mọi bình luận.
-- `/projects/:projectId/tasks/:taskId/attachments` — Owner/Member upload/download qua presigned URL; giới hạn 10 MiB, MIME allowlist, URL 5 phút.
-- `GET /health/live`, `GET /health/ready`, `GET /version`
+| Thư mục | Lệnh |
+| --- | --- |
+| `backend/` | `npm run lint`, `npm run typecheck`, `npm test -- --runInBand`, `npm run build` |
+| `backend/` | `npm run test:e2e -- --runInBand` |
+| `frontend/` | `npm test`, `npm run build` |
 
-Chi tiết chức năng, luồng và kiến trúc được ghi trong [tài liệu chức năng](docs/overview/product-overview.md),
-[yêu cầu sản phẩm](docs/overview/requirements.md), [thiết kế kỹ thuật](docs/architecture/system-design.md)
-và [thiết kế cơ sở dữ liệu](docs/architecture/database.md).
+Kiểm thử end-to-end của backend cần một database PostgreSQL **riêng cho kiểm thử**, đã áp dụng migration, với `DATABASE_URL` trỏ tới database đó. [Hướng dẫn kiểm thử](docs/development/testing-guide.md)
 
-## Kiểm thử và build backend
+## Phát hành trên AWS
 
-```bash
-cd backend
-npm ci
-npm run db:generate
-npm run lint
-npm run typecheck
-npm test -- --runInBand
-npm run test:e2e -- --runInBand
-npm run build
-```
+| Workflow | Cách chạy |
+| --- | --- |
+| [CI](.github/workflows/ci.yml) | Kiểm tra PR vào `main` và các lần push theo cấu hình workflow. |
+| [CD backend](.github/workflows/cd.yml) | Tự chạy sau khi CI thành công cho commit được push lên `main`. Phát hành API và migrator qua ECR, chạy migration trên EC2 rồi kiểm tra readiness. Chế độ thủ công cần SHA của bản đã có đủ hai image trong ECR. |
+| [Release frontend](.github/workflows/frontend-release.yml) | Chạy thủ công trên `main` sau khi API sẵn sàng. Workflow build React, quét image Caddy rồi triển khai qua ECR và Systems Manager. |
 
-E2E tests cần PostgreSQL local đang chạy và `DATABASE_URL` trỏ tới database kiểm thử.
+GitHub Actions xác thực với AWS qua OIDC. Backend đọc thông tin kết nối PostgreSQL và khóa ký JWT từ SSM Parameter Store. Các thay đổi hạ tầng được áp dụng riêng bằng Terraform. [Hạ tầng AWS](infra/terraform/README.md) · [Cấu hình production](deploy/README.md)
 
-Frontend:
+Kiểm tra công khai sau khi phát hành:
 
-```bash
-cd frontend
-npm ci
-npm test
-npm run build
-```
+- [Liveness](https://taskflowvutrungkien.duckdns.org/api/health/live) kiểm tra tiến trình API.
+- [Readiness](https://taskflowvutrungkien.duckdns.org/api/health/ready) kiểm tra API và kết nối PostgreSQL.
+- [Phiên bản](https://taskflowvutrungkien.duckdns.org/api/version) cho biết Git SHA và thời điểm build backend.
 
-## AWS và phát hành
-
-Terraform nằm trong [`infra/`](infra/); hướng dẫn state bootstrap ở [`infra/bootstrap/README.md`](infra/bootstrap/README.md) và nền tảng AWS ở [`infra/terraform/README.md`](infra/terraform/README.md). Quy trình production cùng yêu cầu Parameter Store được mô tả trong [`deploy/README.md`](deploy/README.md).
-
-Không lưu secret vào Git, Terraform variables/state, GitHub variables hoặc log. Production runtime lấy PostgreSQL credential và JWT signing secret từ SSM Parameter Store `SecureString`; GitHub Actions dùng OIDC để build, scan, đẩy image lên ECR rồi yêu cầu EC2 triển khai qua SSM.
-
-## Tài liệu
+## Tài liệu dự án
 
 - [Mục lục tài liệu](docs/README.md)
-- [Trạng thái hệ thống](docs/STATE.md)
-- [Báo cáo tiến độ và Lịch sử phát triển](docs/project/progress.md)
-- [Chức năng chính và luồng nghiệp vụ](docs/overview/product-overview.md)
-- [Yêu cầu sản phẩm](docs/overview/requirements.md)
-- [Thiết kế kỹ thuật](docs/architecture/system-design.md)
-- [Thiết kế cơ sở dữ liệu](docs/architecture/database.md)
-- [Triển khai production](deploy/README.md)
-- [Khởi tạo Terraform state](infra/bootstrap/README.md)
-- [Nền tảng AWS bằng Terraform](infra/terraform/README.md)
+- [Phạm vi và yêu cầu sản phẩm](docs/overview/requirements.md)
+- [Tham chiếu API](docs/api/reference.md)
+- [Kiến trúc bảo mật](docs/architecture/security.md)
+- [Lộ trình](docs/project/roadmap.md)
