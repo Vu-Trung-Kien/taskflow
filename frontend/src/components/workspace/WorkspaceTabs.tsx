@@ -1,4 +1,4 @@
-import { KanbanIcon, BarChart3Icon, UsersIcon } from '../icons';
+import { ListIcon, BarChart3Icon, UsersIcon } from '../icons';
 
 export type WorkspaceTab = 'tasks' | 'dashboard' | 'members';
 
@@ -24,7 +24,7 @@ export function WorkspaceTabs({
         className={`tf-workspace-tab ${activeTab === 'tasks' ? 'active' : ''}`}
         onClick={() => onChangeTab('tasks')}
       >
-        <KanbanIcon size={16} />
+        <ListIcon size={16} />
         <span>Công việc</span>
         <span className="tf-tab-counter">{tasksCount}</span>
       </button>

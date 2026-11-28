@@ -23,7 +23,7 @@ Tài liệu này quy định các chuẩn mực viết mã, nguyên tắc phân 
 
 ### 1.2. Frontend React
 - **Quản lý Trạng thái & Tương tác**:
-  - Áp dụng kỹ thuật cập nhật lạc quan (Optimistic Update) cho các thao tác trực quan như kéo-thả Kanban, đổi trạng thái task, kèm cơ chế rollback state về trạng thái cũ nếu API trả về lỗi.
+  - Áp dụng kỹ thuật cập nhật lạc quan (Optimistic Update) cho các thao tác trực quan như đổi trạng thái task, kèm cơ chế rollback state về trạng thái cũ nếu API trả về lỗi.
   - Quản lý JWT Access Token hoàn toàn trong bộ nhớ (`AuthContext`), không lưu vào `localStorage` hay `sessionStorage` để phòng tránh tấn công XSS.
 
 ---

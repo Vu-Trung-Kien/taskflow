@@ -8,7 +8,6 @@ import {
   EyeIcon,
   EyeOffIcon,
   SparklesIcon,
-  KanbanIcon,
   UsersIcon,
   BarChart3Icon,
 } from '../components/icons';
@@ -72,7 +71,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
               Tổ chức mọi dự án.<br />Nâng tầm hiệu suất đội ngũ.
             </h1>
             <p className="tf-auth-hero-desc">
-              Không gian làm việc trực quan kết hợp bảng kéo-thả Kanban, đo lường tiến độ theo thời gian thực và cộng tác liền mạch.
+              Không gian làm việc trực quan để quản lý công việc, theo dõi tiến độ và cộng tác trong nhóm.
             </p>
           </div>
 
@@ -98,10 +97,6 @@ export function AuthPage({ register = false }: { register?: boolean }) {
               </div>
 
               <div className="tf-preview-features-list">
-                <div className="tf-preview-feature">
-                  <KanbanIcon size={16} />
-                  <span>Bảng Kanban tương tác tức thì</span>
-                </div>
                 <div className="tf-preview-feature">
                   <BarChart3Icon size={16} />
                   <span>Báo cáo tiến độ phân tích chi tiết</span>

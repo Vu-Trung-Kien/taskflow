@@ -1,0 +1,123 @@
+name: Release frontend
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REPOSITORY_NAME: taskflow-frontend
+
+concurrency:
+  group: taskflow-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate deployment target
+        env:
+          DOMAIN: ${{ vars.TASKFLOW_DOMAIN }}
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$DOMAIN" =~ ^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*[a-z0-9]$ ]]; then
+            echo "Set TASKFLOW_DOMAIN to the public DNS hostname of the frontend." >&2
+            exit 1
+          fi
+          if [[ ! "$INSTANCE_ID" =~ ^i-[0-9a-f]+$ ]]; then
+            echo "Set EC2_INSTANCE_ID to the production instance ID." >&2
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Test frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+          VITE_API_BASE_URL=/api npm run build
+
+      - name: Build frontend image
+        run: docker build --tag "taskflow-frontend:$GITHUB_SHA" frontend
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: taskflow-frontend:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Push frontend image
+        id: image
+        run: |
+          set -euo pipefail
+          repository_uri="$(aws ecr describe-repositories --repository-names "$ECR_REPOSITORY_NAME" --query 'repositories[0].repositoryUri' --output text)"
+          tag="$GITHUB_SHA-frontend-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${repository_uri%%/*}"
+          docker tag "taskflow-frontend:$GITHUB_SHA" "$repository_uri:$tag"
+          docker push "$repository_uri:$tag"
+          digest="$(aws ecr describe-images --repository-name "$ECR_REPOSITORY_NAME" --image-ids "imageTag=$tag" --query 'imageDetails[0].imageDigest' --output text)"
+          echo "ref=$repository_uri@$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy frontend through Systems Manager
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+          DOMAIN: ${{ vars.TASKFLOW_DOMAIN }}
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+          release_dir="/opt/taskflow/frontend/releases/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          package="$(tar -czf - -C deploy compose.frontend.yaml deploy-frontend.sh | base64 --wrap=0)"
+          printf -v command 'set -euo pipefail; install -d -m 0750 %q; printf %%s %q | base64 --decode | tar -xz -C %q; bash %q %q %q %q' \
+            "$release_dir" "$package" "$release_dir" "$release_dir/deploy-frontend.sh" "$IMAGE" "$DOMAIN" "$AWS_REGION"
+          parameters="$(jq -nc --arg command "$command" '{commands: [$command]}')"
+          command_id="$(aws ssm send-command --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript --timeout-seconds 600 --parameters "$parameters" \
+            --query 'Command.CommandId' --output text)"
+          echo "SSM command: $command_id"
+          for ((attempt = 1; attempt <= 120; attempt++)); do
+            status="$(aws ssm list-command-invocations --command-id "$command_id" \
+              --query 'CommandInvocations[0].Status' --output text)"
+            case "$status" in
+              Success) exit 0 ;;
+              Failed|Cancelled|TimedOut|Cancelling)
+                aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+                  --query '{Status:Status,Error:StandardErrorContent}' --output json >&2
+                exit 1 ;;
+              Pending|InProgress|Delayed|None|"") sleep 5 ;;
+              *) echo "Unexpected SSM status: $status" >&2; exit 1 ;;
+            esac
+          done
+          echo "Timed out waiting for SSM command $command_id." >&2
+          exit 1
+
+      - name: Verify public HTTPS
+        env:
+          DOMAIN: ${{ vars.TASKFLOW_DOMAIN }}
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 --max-time 15 "https://$DOMAIN/projects" | grep 'id="root"'
+          curl -fsS --retry 3 --max-time 15 "https://$DOMAIN/api/health/ready" | jq -e '.status == "ok"'

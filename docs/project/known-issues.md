@@ -23,7 +23,7 @@ Tài liệu này ghi nhận các vấn đề tồn đọng, nợ kỹ thuật (t
 
 ---
 
-## 3. Nợ kỹ thuật Frontend & Giao diện Kanban
+## 3. Nợ kỹ thuật Frontend
 
 ### 3.1. File `App.tsx` đóng vai trò Monolith Component — [ĐÃ GIẢI QUYẾT]
 - **Hiện trạng**: Toàn bộ tệp `frontend/src/App.tsx` cũ (1.505 dòng) đã được tái cấu trúc triệt để thành cấu trúc component module hóa chuẩn SaaS:
@@ -33,19 +33,12 @@ Tài liệu này ghi nhận các vấn đề tồn đọng, nợ kỹ thuật (t
   - `src/components/notifications/`: `NotificationBell`.
   - `src/components/projects/`: `ProjectCard`, `CreateProjectModal`.
   - `src/components/workspace/`: `ProjectHeader`, `WorkspaceTabs`.
-  - `src/components/tasks/`: `KanbanBoard`, `TaskRow`, `TaskCreateForm`, `TaskDetailsPanel`.
+  - `src/components/tasks/`: `TaskRow`, `TaskCreateForm`, `TaskDetailsPanel`.
   - `src/components/dashboard/`: `DashboardPanel`.
   - `src/components/members/`: `MembersPanel`.
   - `src/pages/`: `AuthPage`, `ProjectsPage`, `WorkspacePage`.
   - `src/App.tsx`: Rút gọn còn 65 dòng, chỉ đảm nhiệm routing và route guards.
 - **Kết quả**: Mã nguồn sạch, dễ bảo trì, re-render tối ưu, bộ test `redesign.test.tsx` đạt 100% pass.
-
-### 3.2. Bảng Kanban chưa hỗ trợ sắp xếp thứ tự tùy ý trong cùng một cột — [ĐÃ GIẢI QUYẾT]
-- **Giải pháp thực hiện**:
-  - Bổ sung cột `position Float @default(65536.0)` vào bảng `tasks` trong schema Prisma và migration `backend/prisma/migrations/20261121000000_task_position/migration.sql` kèm index `(project_id, status, position)`.
-  - Cập nhật DTO `CreateTaskDto`, `UpdateTaskDto` và `TaskService`: hỗ trợ nhận và cập nhật `position`, tự động tính toán vị trí tiếp theo khi tạo mới, và sắp xếp task theo `position asc, createdAt desc`.
-  - Nâng cấp giao diện `KanbanBoard.tsx`: hỗ trợ kéo thả thẻ với thuật toán Fractional Indexing (`(prevPos + nextPos) / 2`), hiển thị đường chỉ báo vị trí (`drop-before`, `drop-after`), hỗ trợ cả đổi trạng thái liên cột lẫn đổi thứ tự ưu tiên trong cùng một cột.
-  - Bổ sung bộ unit test `backend/src/tasks/task.service.spec.ts` (100% pass).
 
 ---
 

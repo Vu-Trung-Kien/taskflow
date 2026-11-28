@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { KanbanBoard } from './components/tasks/KanbanBoard';
 import { TaskRow } from './components/tasks/TaskRow';
 import { DashboardPanel } from './components/dashboard/DashboardPanel';
 import { MembersPanel } from './components/members/MembersPanel';
@@ -43,21 +42,6 @@ const mockTasks: Task[] = [
       },
     ],
   },
-  {
-    id: 'task-2',
-    projectId: 'proj-1',
-    parentTaskId: null,
-    assigneeId: null,
-    title: 'Kiểm thử responsive',
-    description: null,
-    status: 'IN_PROGRESS',
-    priority: 'URGENT',
-    dueAt: null,
-    deletedAt: null,
-    createdAt: '2026-11-02T00:00:00.000Z',
-    updatedAt: '2026-11-02T00:00:00.000Z',
-    assignee: null,
-  },
 ];
 
 const mockMembers: ProjectMember[] = [
@@ -76,47 +60,6 @@ const mockMembers: ProjectMember[] = [
     user: { id: 'user-2', name: 'Trần Thị B', email: 'b@example.com' },
   },
 ];
-
-describe('KanbanBoard component', () => {
-  it('renders all 4 columns: Cần làm, Đang làm, Hoàn tất, Bị chặn', () => {
-    const onSelectTask = vi.fn();
-    const onDropStatus = vi.fn();
-
-    render(
-      <KanbanBoard
-        tasks={mockTasks}
-        canEdit={true}
-        onSelectTask={onSelectTask}
-        onDropStatus={onDropStatus}
-      />,
-    );
-
-    expect(screen.getByText('Cần làm')).toBeInTheDocument();
-    expect(screen.getByText('Đang làm')).toBeInTheDocument();
-    expect(screen.getByText('Hoàn tất')).toBeInTheDocument();
-    expect(screen.getByText('Bị chặn')).toBeInTheDocument();
-
-    expect(screen.getByText('Xây dựng Design System')).toBeInTheDocument();
-    expect(screen.getByText('Kiểm thử responsive')).toBeInTheDocument();
-  });
-
-  it('triggers onSelectTask when a card is clicked', () => {
-    const onSelectTask = vi.fn();
-    const onDropStatus = vi.fn();
-
-    render(
-      <KanbanBoard
-        tasks={mockTasks}
-        canEdit={true}
-        onSelectTask={onSelectTask}
-        onDropStatus={onDropStatus}
-      />,
-    );
-
-    fireEvent.click(screen.getByText('Xây dựng Design System'));
-    expect(onSelectTask).toHaveBeenCalledWith(mockTasks[0]);
-  });
-});
 
 describe('TaskRow list component', () => {
   it('renders task row details properly', () => {
@@ -137,6 +80,8 @@ describe('TaskRow list component', () => {
 
     expect(screen.getByText('Xây dựng Design System')).toBeInTheDocument();
     expect(screen.getByText('Thiết kế các component UI chuẩn SaaS')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Xây dựng Design System'));
+    expect(onSelect).toHaveBeenCalledOnce();
   });
 });
 

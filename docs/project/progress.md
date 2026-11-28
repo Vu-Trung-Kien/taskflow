@@ -66,7 +66,6 @@ Tài liệu này ghi nhận toàn bộ quá trình phát triển dự án **Task
 | Rate Limiting endpoint xác thực (@nestjs/throttler) | Hoàn tất | Local & Unit Tests |
 | Đổi mật khẩu chủ động (POST /auth/change-password) | Hoàn tất | Local & Unit Tests |
 | Quản lý hồ sơ người dùng (PATCH /auth/profile & UI Settings) | Hoàn tất | Local & Unit Tests |
-| Bảng kéo-thả Kanban (Drag-and-Drop Board) | Hoàn tất | Local & CI Pipeline |
 | Frontend MVP (React 19 + TypeScript + Vite) | Hoàn tất mã nguồn | Local Dev Server |
 | Hạ tầng AWS Terraform cơ sở (EC2, S3, EBS, ECR, IAM OIDC) | Đã triển khai | AWS Account (`ap-southeast-1`) |
 | Pipeline CI/CD (GitHub Actions OIDC -> ECR -> SSM) | Đã kích hoạt | GitHub Actions |
@@ -104,19 +103,7 @@ Dưới đây là các hạng mục tồn đọng được phân loại theo t�
    - Quên mật khẩu và đặt lại mật khẩu an toàn qua email token.
    - Cập nhật thông tin tài khoản (tên hiển thị, avatar).
 
-### 3.2. Nâng cấp Giao diện & Trải nghiệm Người dùng (Frontend)
-1. **Bảng kéo thả Kanban Board - [ĐÃ HOÀN TẤT]:**
-   - Bổ sung giao diện Kanban với 4 cột trạng thái (`TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`).
-   - Hỗ trợ kéo thả card công việc mượt mà và cập nhật trạng thái trực quan tức thì.
-   - Chuyển đổi linh hoạt giữa chế độ danh sách và bảng kéo-thả Kanban.
-2. **Tách module mã nguồn:** Tái cấu trúc file `App.tsx` thành các thư mục chuẩn: `components/`, `pages/`, `hooks/`, `context/`.
-3. **Tìm kiếm & Bộ lọc nâng cao:**
-   - Thanh tìm kiếm từ khóa theo tiêu đề và nội dung task.
-   - Bộ lọc theo người thực hiện, khoảng ngày hết hạn, task quá hạn.
-4. **Toast Notification System:** Thay thế các thông báo lỗi tĩnh bằng popup Toast thông báo phản hồi thao tác thành công/thất bại.
-5. **Thanh tiến trình tải tệp (Upload Progress):** Hiển thị % tiến độ khi tải các tệp đính kèm dung lượng lớn lên S3.
-
-### 3.3. Hạ tầng DevOps, Vận hành & Bảo mật
+### 3.2. Hạ tầng DevOps, Vận hành & Bảo mật
 1. **Reverse Proxy & Chứng chỉ HTTPS Công khai:**
    - Cấu hình Nginx hoặc AWS Application Load Balancer (ALB) làm reverse proxy lắng nghe cổng 80/443.
    - Tích hợp chứng chỉ SSL Let's Encrypt / AWS Certificate Manager (ACM) để cung cấp HTTPS an toàn cho người dùng cuối.

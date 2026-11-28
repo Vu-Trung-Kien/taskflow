@@ -80,7 +80,7 @@ export class TaskController {
   }
 
   @Patch(':taskId')
-  @ApiOperation({ summary: 'Cập nhật công việc (trạng thái, ưu tiên, vị trí Kanban...)' })
+  @ApiOperation({ summary: 'Cập nhật công việc (trạng thái, ưu tiên, vị trí sắp xếp...)' })
   update(
     @Req() request: AuthenticatedRequest,
     @Param('projectId', ParseUUIDPipe) projectId: string,

@@ -191,22 +191,14 @@ flowchart TD
 
 ---
 
-## 5. Kế hoạch Triển khai Frontend Production (ADR-001) `[CHƯA LÀM]`
+## 5. Phát hành frontend production (ADR-001)
 
-Theo quyết định kiến trúc [ADR-001](../architecture/decisions.md#adr-001-phương-án-triển-khai-frontend-production-caddy-trên-ec2), trong tương lai khi đưa giao diện người dùng ra môi trường công khai, mô hình triển khai sẽ được nâng cấp như sau:
+1. Trỏ tên miền công khai về EC2 và xác nhận cổng 80/443 đến được Caddy. Áp dụng cấu hình Terraform để tạo ECR `taskflow-frontend`, cấp quyền cho hai IAM role hiện có và đặt `attachment_cors_origins` thành origin HTTPS của frontend.
+2. Cấu hình các biến GitHub Actions `TASKFLOW_DOMAIN` (hostname), `AWS_ROLE_ARN` và `EC2_INSTANCE_ID`. API production phải sẵn sàng qua `/health/ready`, với network Docker `taskflow_default`.
+3. Chạy workflow **Release frontend** từ nhánh `main`. Workflow test và build React, quét image Caddy, đẩy image lên ECR, sau đó triển khai qua SSM bằng digest.
+4. Bản phát hành kiểm tra HTTPS, tuyến React Router `/projects` và readiness của API qua `/api/health/ready`. Sau lần phát hành đầu tiên, kiểm tra đăng nhập, tải lại để làm mới phiên và tải lên/tải xuống tệp qua S3 từ tên miền thật.
 
-1. **Đóng gói Static Web**:
-   - Trong quá trình CI/CD, chạy lệnh `npm run build` trên thư mục `frontend/` để tạo các static assets tối ưu (`dist/`).
-2. **Web Server & Reverse Proxy Caddy**:
-   - Bổ sung service `web` vào file [`deploy/compose.production.yaml`](../../deploy/compose.production.yaml) sử dụng Docker image `caddy:2.8-alpine`.
-   - Caddy mount thư mục tĩnh của React và file cấu hình `Caddyfile`.
-   - Caddy trực tiếp lắng nghe cổng 80 và 443 của máy chủ EC2.
-3. **Định tuyến Yêu cầu (Routing & Reverse Proxy)**:
-   - Các yêu cầu tới `/api/*` và `/health/*`: Caddy làm reverse proxy chuyển tiếp tới `http://api:3000`.
-   - Các yêu cầu khác: Caddy phục vụ file tĩnh và fallback về `index.html` cho các route React Router SPA (`try_files {path} /index.html`).
-   - Tự động kích hoạt chứng chỉ SSL/TLS miễn phí qua giao thức ACME (Let's Encrypt / ZeroSSL) khi có tên miền chính thức.
-
----
+Caddy phục vụ bản build React và chuyển tiếp `/api/*` tới API trên cùng EC2. Cấu hình proxy đổi đường dẫn refresh cookie thành `/api/auth` để hỗ trợ đăng nhập và làm mới phiên trên cùng origin. Caddy lưu chứng chỉ trong Docker volume và tự cấp TLS cho tên miền đã trỏ về EC2. Nếu HTTPS hoặc API không vượt qua kiểm tra trên EC2, script khôi phục bản frontend trước đó nếu có.
 
 ## 6. Sổ tay Vận hành & Xử lý Sự cố (Troubleshooting Guide)
 

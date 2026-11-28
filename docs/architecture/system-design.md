@@ -14,7 +14,6 @@ flowchart TD
         ReactApp["React 19 SPA (frontend/src/)"]
         subgraph UIComponents ["UI Components & State"]
             AuthContext["Auth Context (JWT In-Memory)"]
-            KanbanView["Kanban Board (HTML5 Drag & Drop)"]
             TaskView["Task & Sub-task List"]
             CollabView["Comments & Attachments Modal"]
             NotifDropdown["Notification Bell Dropdown"]
@@ -136,13 +135,9 @@ Nhằm đảm bảo tính mở rộng, khả năng kiểm thử độc lập và
   - Việc chuyển quyền sở hữu (`POST /projects/:projectId/transfer-owner`) được bọc trong một database transaction: thăng cấp thành viên đích lên `OWNER` và hạ cấp Owner hiện tại xuống `MEMBER`.
 - **Lưu trữ dự án (Project Archiving)**: Khi dự án có `archivedAt != null`, toàn bộ thao tác ghi (thêm task, bình luận, đính kèm tệp) đều bị chặn và trả về lỗi `BadRequestException`.
 
-### 3.3. Module Công việc & Bảng kéo-thả Kanban (Tasks & Kanban)
+### 3.3. Module Công việc (Tasks)
 - **Quản lý phân cấp công việc**: Hỗ trợ task cha và sub-task 1 cấp. Database bắt buộc ràng buộc khóa ngoại phức hợp `(project_id, parent_task_id) -> (project_id, id)` trên bảng `tasks`, đảm bảo task con không bao giờ bị gán nhầm sang dự án khác.
 - **Xóa mềm (Soft-delete)**: Khi xóa task, backend cập nhật `deletedAt = now()`. Mặc định các truy vấn chỉ lấy các bản ghi có `deletedAt: null`. Người dùng có quyền có thể xem danh sách "Đã xóa" và gọi API khôi phục (`deletedAt = null`).
-- **Giao diện Kanban trực quan**:
-  - Frontend (`frontend/src/App.tsx`) chia giao diện thành 4 cột: `TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`.
-  - Xử lý sự kiện kéo-thả (Drag & Drop): Khi người dùng thả thẻ task vào cột mới, giao diện lập tức dời thẻ (optimistic update) và gọi API `PATCH /projects/:projectId/tasks/:taskId` với `{ status: targetStatus }`. Nếu API báo lỗi, thẻ được trả về vị trí cũ.
-  - Sub-task không hiển thị thành thẻ độc lập trên bảng Kanban mà được gom thành huy hiệu tiến độ trên thẻ của task cha.
 - **Xuất dữ liệu CSV**: Endpoint `GET /projects/:projectId/tasks/export` truy vấn danh sách công việc và stream dữ liệu CSV theo chuẩn RFC 4180, bắt đầu bằng chuỗi ký tự UTF-8 BOM (`\uFEFF`) để hỗ trợ tốt nhất trên phần mềm bảng tính.
 
 ### 3.4. Module Tệp đính kèm & S3 Storage (Collaboration & Attachments)

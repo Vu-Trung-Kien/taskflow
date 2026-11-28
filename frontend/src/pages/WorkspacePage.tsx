@@ -6,7 +6,6 @@ import type { Project, ProjectMember, Task, TaskStatus } from '../types';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProjectHeader } from '../components/workspace/ProjectHeader';
 import { WorkspaceTabs, type WorkspaceTab } from '../components/workspace/WorkspaceTabs';
-import { KanbanBoard } from '../components/tasks/KanbanBoard';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskCreateForm } from '../components/tasks/TaskCreateForm';
 import { TaskDetailsPanel } from '../components/tasks/TaskDetailsPanel';
@@ -15,12 +14,9 @@ import { MembersPanel } from '../components/members/MembersPanel';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 import {
-  KanbanIcon,
-  ListIcon,
   FilterIcon,
   DownloadIcon,
   TrashIcon,
-  PlusIcon,
   Loader2Icon,
   AlertCircleIcon,
   CheckCircleIcon,
@@ -57,12 +53,10 @@ export function WorkspacePage() {
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [tab, setTab] = useState<WorkspaceTab>('tasks');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
-  const [quickAddStatus, setQuickAddStatus] = useState<TaskStatus | null>(null);
 
   const role = useMemo(
     () => members.find((member) => member.userId === user?.id)?.role ?? 'VIEWER',
@@ -113,31 +107,6 @@ export function WorkspacePage() {
       }
     } catch (requestError) {
       setError(messageOf(requestError));
-    }
-  }
-
-  async function handleKanbanDrop(taskId: string, targetStatus: TaskStatus, targetPosition?: number) {
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-    if (task.status === targetStatus && targetPosition !== undefined && task.position === targetPosition) return;
-
-    const newPosition = targetPosition ?? task.position;
-
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus, position: newPosition } : t)),
-    );
-    if (selectedTask?.id === taskId) {
-      setSelectedTask((prev) => (prev ? { ...prev, status: targetStatus, position: newPosition } : null));
-    }
-
-    try {
-      await taskApi.update(projectId, taskId, {
-        status: targetStatus,
-        ...(targetPosition !== undefined ? { position: targetPosition } : {}),
-      });
-    } catch (requestError) {
-      setError(messageOf(requestError));
-      await refreshTasks();
     }
   }
 
@@ -256,34 +225,11 @@ export function WorkspacePage() {
                   <p className="tf-text-muted">
                     {showDeleted
                       ? 'Xem và khôi phục các công việc đã bị xóa tạm thời.'
-                      : 'Kéo thả thẻ công việc để cập nhật trạng thái hoặc chuyển sang danh sách.'}
+                      : 'Chọn một công việc để xem hoặc chỉnh sửa chi tiết.'}
                   </p>
                 </div>
 
                 <div className="tf-tasks-controls">
-                  {!showDeleted && (
-                    <div className="tf-segmented-toggle" role="group" aria-label="Chế độ hiển thị">
-                      <button
-                        type="button"
-                        className={`tf-segment-btn ${viewMode === 'kanban' ? 'active' : ''}`}
-                        onClick={() => setViewMode('kanban')}
-                        title="Chế độ xem bảng kéo-thả Kanban"
-                      >
-                        <KanbanIcon size={15} />
-                        <span>Bảng Kanban</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`tf-segment-btn ${viewMode === 'list' ? 'active' : ''}`}
-                        onClick={() => setViewMode('list')}
-                        title="Chế độ xem bảng danh sách dọc"
-                      >
-                        <ListIcon size={15} />
-                        <span>Danh sách</span>
-                      </button>
-                    </div>
-                  )}
-
                   {/* Status Filter */}
                   <div className="tf-filter-select-wrap">
                     <FilterIcon size={13} className="tf-filter-icon" />
@@ -355,7 +301,6 @@ export function WorkspacePage() {
                   projectId={projectId}
                   members={members}
                   onCreated={refreshTasks}
-                  defaultStatus={quickAddStatus || 'TODO'}
                 />
               )}
 
@@ -379,34 +324,11 @@ export function WorkspacePage() {
                       ? 'Không có công việc nào phù hợp với bộ lọc hiện tại.'
                       : 'Hãy tạo công việc đầu tiên để bắt đầu phân công và theo dõi tiến độ.'
                   }
-                  action={
-                    !showDeleted && canEdit ? (
-                      <Button
-                        variant="primary"
-                        icon={<PlusIcon size={16} />}
-                        onClick={() => setQuickAddStatus('TODO')}
-                      >
-                        Tạo công việc ngay
-                      </Button>
-                    ) : undefined
-                  }
-                />
-              )}
-
-              {/* Kanban View */}
-              {!loading && tasks.length > 0 && viewMode === 'kanban' && !showDeleted && (
-                <KanbanBoard
-                  tasks={tasks.filter((task) => !task.parentTaskId)}
-                  canEdit={canEdit}
-                  selectedTaskId={selectedTask?.id}
-                  onSelectTask={setSelectedTask}
-                  onDropStatus={handleKanbanDrop}
-                  onQuickAdd={(targetStatus) => setQuickAddStatus(targetStatus)}
                 />
               )}
 
               {/* List View */}
-              {!loading && (viewMode === 'list' || showDeleted) && tasks.length > 0 && (
+              {!loading && tasks.length > 0 && (
                 <div className="tf-task-list-view">
                   <div className="tf-task-list-header">
                     <span className="tf-list-header-status">Trạng thái</span>

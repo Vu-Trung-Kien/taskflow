@@ -7,6 +7,7 @@ export default defineConfig({
     proxy: {
       '/auth': 'http://localhost:3000',
       '/projects': 'http://localhost:3000',
+      '/notifications': 'http://localhost:3000',
       '/health': 'http://localhost:3000',
       '/version': 'http://localhost:3000',
     },

@@ -1,6 +1,6 @@
 # Đặc tả Các Luồng Hoạt động Trọng yếu (Architectural Flows)
 
-Tài liệu này đặc tả chi tiết 5 luồng hoạt động then chốt của hệ thống TaskFlow: từ xác thực phiên làm việc, quản lý công việc gắn liền thông báo, bảng kéo-thả Kanban, tải tệp đính kèm an toàn qua S3 đến chu trình phát hành tự động CI/CD. Mỗi luồng được mô tả qua điểm vào, các bước thực thi theo file/hàm thật, sơ đồ tuần tự Mermaid, nhánh lỗi và các tác dụng phụ của hệ thống.
+Tài liệu này đặc tả chi tiết 4 luồng hoạt động then chốt của hệ thống TaskFlow: từ xác thực phiên làm việc, quản lý công việc gắn liền thông báo, tải tệp đính kèm an toàn qua S3 đến chu trình phát hành tự động CI/CD. Mỗi luồng được mô tả qua điểm vào, các bước thực thi theo file/hàm thật, sơ đồ tuần tự Mermaid, nhánh lỗi và các tác dụng phụ của hệ thống.
 
 ---
 
@@ -151,75 +151,16 @@ sequenceDiagram
 
 ---
 
-## 3. Luồng Tương tác Kéo-thả Bảng Kanban (Kanban Drag & Drop)
-
-Luồng thể hiện sự phối hợp giữa giao diện người dùng frontend (phản hồi trực quan tức thời) và backend API đảm bảo tính nhất quán dữ liệu.
-
-### 3.1. Điểm vào (Entry Points)
-- **Tương tác giao diện**: Thao tác kéo thẻ công việc và thả vào một trong 4 cột trạng thái trên giao diện `KanbanBoard` (`frontend/src/App.tsx`).
-- **Gọi API**: `api.updateTask(projectId, taskId, { status: targetStatus })` (`frontend/src/api.ts`).
-
-### 3.2. Các bước thực thi theo hàm/file thật
-1. **Bắt đầu kéo (`onDragStart` trong `frontend/src/App.tsx`)**:
-   - Kiểm tra `canEdit` (chỉ cho phép nếu vai trò là `OWNER` hoặc `MEMBER`).
-   - Thiết lập dữ liệu kéo qua `e.dataTransfer.setData('text/plain', task.id)` và `effectAllowed = 'move'`.
-2. **Kéo qua cột đích (`onDragOver` & `onDragEnter`)**:
-   - Ngăn chặn hành vi mặc định `e.preventDefault()`.
-   - Cập nhật state `activeDropColumn` để đổi màu viền cột đích (drag hint).
-3. **Thả thẻ công việc (`onDrop` $\rightarrow$ `handleKanbanDrop` trong `frontend/src/App.tsx`)**:
-   - Trích xuất `taskId` từ data transfer. Nếu `task.status === targetStatus`, hủy thao tác.
-   - *Lưu ý quan trọng về thứ tự thẻ*: Thao tác kéo-thả hiện tại **chỉ thay đổi trạng thái cột (`status`)**, hoàn toàn **chưa hỗ trợ sắp xếp thứ tự tùy ý giữa các task trong cùng một cột** (do bảng `tasks` trong database chưa có trường `position`, xem thêm tại [`docs/project/roadmap.md`](../project/roadmap.md)). Thứ tự hiển thị thẻ trong cột hiện tại phụ thuộc vào thứ tự thời gian tạo (`createdAt desc`).
-   - **Cập nhật lạc quan (Optimistic Update)**: Gọi `setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: targetStatus } : t))`. Thẻ công việc lập tức nhảy sang cột mới trên màn hình.
-   - Gửi request ngầm: Gọi `api.updateTask(projectId, taskId, { status: targetStatus })`.
-   - Backend xử lý: `TaskController.update` cập nhật database và sinh thông báo `TASK_STATUS_CHANGED`.
-   - **Xử lý khi có lỗi (Rollback)**: Nếu API trả về lỗi (mất mạng, hết hạn phiên hoặc quyền Viewer), khối `catch (requestError)` bắt lỗi, hiển thị thông báo lỗi trên thanh toolbar và khôi phục lại danh sách task ban đầu.
-
-### 3.3. Sơ đồ tuần tự (Sequence Diagram)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Người dùng
-    participant UI as KanbanBoard (App.tsx)
-    participant ApiClient as api.ts
-    participant Backend as NestJS API (/tasks)
-
-    User->>UI: Kéo card task và thả vào cột "DONE"
-    UI->>UI: handleKanbanDrop(taskId, "DONE")
-    UI->>UI: Optimistic Update: dời card sang cột "DONE" ngay lập tức
-    UI->>ApiClient: api.updateTask(projectId, taskId, { status: "DONE" })
-    ApiClient->>Backend: PATCH /projects/:id/tasks/:taskId { status: "DONE" }
-
-    alt Backend xử lý thành công (200 OK)
-        Backend-->>ApiClient: Updated Task JSON
-        ApiClient-->>UI: Thành công, giữ nguyên vị trí mới
-    else Backend báo lỗi (401/403/500 hoặc mất kết nối mạng)
-        Backend-->>ApiClient: HTTP Error / Network Failure
-        ApiClient-->>UI: throw Error
-        UI->>UI: Rollback state: Trả card về cột trạng thái ban đầu
-        UI->>User: Hiển thị banner thông báo lỗi thao tác
-    end
-```
-
-### 3.4. Nhánh lỗi (Error Branches)
-- Lỗi mạng hoặc HTTP 401/403: Frontend bắt lỗi trong `handleKanbanDrop`, hoàn tác trạng thái state `tasks` về ban đầu và hiển thị thông điệp lỗi cho người dùng.
-
-### 3.5. Tác dụng phụ (Side Effects)
-- Đổi trạng thái `status` của task trong bảng `tasks` ở cơ sở dữ liệu.
-- Kích hoạt thông báo in-app tới người tạo và người thực hiện task.
-
----
-
-## 4. Luồng Tải lên Tệp đính kèm an toàn qua S3 Presigned URL (Secure S3 Upload)
+## 3. Luồng Tải lên Tệp đính kèm an toàn qua S3 Presigned URL (Secure S3 Upload)
 
 Quy trình 3 bước đảm bảo tệp nhị phân được truyền trực tiếp giữa trình duyệt và S3 mà không đi qua server API, giúp giảm tải băng thông và bộ nhớ cho máy chủ backend, đồng thời kiểm duyệt chặt chẽ định dạng, dung lượng và sự tồn tại thực tế của tệp.
 
-### 4.1. Điểm vào (Entry Points)
+### 3.1. Điểm vào (Entry Points)
 - **Bước 1 (Cấp Presigned URL)**: `POST /projects/:projectId/tasks/:taskId/attachments` $\rightarrow$ `CollaborationController.createAttachment` (`backend/src/collaboration/collaboration.controller.ts`)
 - **Bước 2 (Upload trực tiếp)**: HTTP `PUT <presigned-url>` trực tiếp từ trình duyệt tới S3 Storage (`frontend/src/api.ts`).
 - **Bước 3 (Xác nhận và kích hoạt)**: `POST /projects/:projectId/tasks/:taskId/attachments/confirm` $\rightarrow$ `CollaborationController.confirmAttachment` (`backend/src/collaboration/collaboration.controller.ts`)
 
-### 4.2. Các bước thực thi theo hàm/file thật
+### 3.2. Các bước thực thi theo hàm/file thật
 1. **Khởi tạo và xin Presigned URL (`CollaborationService.createAttachment` trong `backend/src/collaboration/collaboration.service.ts`)**:
    - Kiểm tra quyền: `ProjectAccessService.requireRole(projectId, userId, [OWNER, MEMBER])`.
    - *Khẳng định bảo mật giới hạn dung lượng 10 MiB*: Kiểm tra `sizeBytes <= 10 * 1024 * 1024` (tối đa 10 MiB, khai báo tường minh trong `backend/src/collaboration/collaboration.service.ts`).
@@ -235,7 +176,7 @@ Quy trình 3 bước đảm bảo tệp nhị phân được truyền trực ti�
    - Nếu S3 báo tệp không tồn tại hoặc `ContentLength === 0`, từ chối kích hoạt.
    - Nếu xác minh hợp lệ: Tạo bản ghi vào bảng `attachments` qua `prisma.attachment.create` với `uploadedAt = now()`.
 
-### 4.3. Sơ đồ tuần tự (Sequence Diagram)
+### 3.3. Sơ đồ tuần tự (Sequence Diagram)
 
 ```mermaid
 sequenceDiagram
@@ -280,26 +221,26 @@ sequenceDiagram
     end
 ```
 
-### 4.4. Nhánh lỗi (Error Branches)
+### 3.4. Nhánh lỗi (Error Branches)
 - `400 Bad Request`: Dung lượng tệp > 10 MiB, MIME type không thuộc danh sách cho phép, hoặc lệnh `HeadObject` tới S3 thất bại (người dùng chưa upload tệp hoặc upload bị hủy giữa chừng).
 - `403 Forbidden`: Người dùng là `VIEWER` hoặc không thuộc dự án.
 - Lỗi mạng S3: Lỗi kết nối hoặc CORS cấu hình sai trên S3 bucket khiến trình duyệt không thể hoàn thành lệnh `PUT`.
 
-### 4.5. Tác dụng phụ (Side Effects)
+### 3.5. Tác dụng phụ (Side Effects)
 - Lưu trữ bytes nhị phân trong bucket S3 riêng tư.
 - Tạo một bản ghi mới trong bảng `attachments` của database.
 
 ---
 
-## 5. Luồng Tích hợp & Triển khai Liên tục (CI $\rightarrow$ CD $\rightarrow$ SSM Release)
+## 4. Luồng Tích hợp & Triển khai Liên tục (CI $\rightarrow$ CD $\rightarrow$ SSM Release)
 
 Chu trình phát hành tự động hóa khép kín: từ kiểm thử mã nguồn, quét lỗ hổng bảo mật, đóng gói container đến kích hoạt triển khai lên máy chủ EC2 mà không lưu trữ static credential trên GitHub Actions.
 
-### 5.1. Điểm vào (Entry Points)
+### 4.1. Điểm vào (Entry Points)
 - **CI Trigger**: Sự kiện tạo Pull Request hoặc Push code lên bất kỳ nhánh nào (`.github/workflows/ci.yml`).
 - **CD Trigger**: Sự kiện Push (hoặc Merge PR) vào nhánh `main` sau khi toàn bộ job CI đã vượt qua (`.github/workflows/cd.yml`).
 
-### 5.2. Các bước thực thi theo hàm/file thật
+### 4.2. Các bước thực thi theo hàm/file thật
 1. **Kiểm thử & Quét an ninh CI (`.github/workflows/ci.yml`)**:
    - Job `test`: Chạy `npm run lint` (`oxlint`), `npm run typecheck` (`tsc`), và `npm test` (`jest`).
    - Job `e2e`: Khởi chạy service container PostgreSQL, áp dụng migration `prisma migrate deploy`, chạy bộ kiểm thử tích hợp `npm run test:e2e`.
@@ -318,7 +259,7 @@ Chu trình phát hành tự động hóa khép kín: từ kiểm thử mã ngu�
      - Tái khởi động dịch vụ qua Docker Compose: `docker compose -f deploy/compose.production.yaml up -d --remove-orphans api`.
      - Xác thực trạng thái ứng dụng: Gửi request `curl -f http://127.0.0.1:3000/health/ready` kiểm tra kết nối database và `curl http://127.0.0.1:3000/version` đối chiếu Git SHA.
 
-### 5.3. Sơ đồ tuần tự (Sequence Diagram)
+### 4.3. Sơ đồ tuần tự (Sequence Diagram)
 
 ```mermaid
 sequenceDiagram
@@ -358,13 +299,13 @@ sequenceDiagram
     GH-->>Dev: Pipeline thành công, Release hoàn tất
 ```
 
-### 5.4. Nhánh lỗi (Error Branches)
+### 4.4. Nhánh lỗi (Error Branches)
 - Thất bại kiểm thử hoặc quét lỗ hổng Trivy: Pipeline CI dừng ngay lập tức, không kích hoạt CD.
 - Lỗi xác thực OIDC: Sai repository subject claim hoặc IAM role cấu hình sai trust policy $\rightarrow$ CD dừng.
 - Migration Database thất bại: Lệnh `prisma migrate deploy` trả về lỗi $\rightarrow$ Kịch bản dừng lại, giữ nguyên container API phiên bản cũ đang chạy, không làm gián đoạn hệ thống.
 - Health Check thất bại: API container không khởi động được hoặc kết nối DB thất bại $\rightarrow$ Kịch bản trả về exit code 1, SSM đánh dấu lệnh thất bại và ghi nhận vào log.
 
-### 5.5. Tác dụng phụ (Side Effects)
+### 4.5. Tác dụng phụ (Side Effects)
 - Lưu image mới trong Amazon ECR Repository (tự động áp dụng lifecycle policy giữ 10 bản mới nhất).
 - Cập nhật database schema lên phiên bản migration mới nhất.
 - Thay thế tiến trình backend container trên máy chủ EC2 với phiên bản Git SHA mới.
@@ -372,7 +313,7 @@ sequenceDiagram
 
 ---
 
-## 6. Tài liệu Liên quan
+## 5. Tài liệu Liên quan
 
 - [Mục lục Tài liệu](../README.md)
 - [Trạng thái Hệ thống](../STATE.md)

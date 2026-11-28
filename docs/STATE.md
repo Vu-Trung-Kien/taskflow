@@ -3,9 +3,9 @@
 ## Đang làm
 - Chuẩn bị các bước hoàn thiện tiếp theo theo lộ trình phát triển:
   - Tích hợp tài liệu Swagger / OpenAPI (`@nestjs/swagger`) tại endpoint `/api-docs`.
-  - Hỗ trợ Tìm kiếm và Lọc nâng cao cho Tasks (Full-text search title/description, lọc kết hợp nhiều điều kiện).
 
 ## Đã xong
+- **Gỡ bảng Kanban khỏi frontend**. Tab Công việc dùng danh sách. Thứ tự đã lưu và trường `position` trong API vẫn được sử dụng cho danh sách.
 - **Đã xong Bước 10 (Quản lý Hồ sơ Cá nhân: PATCH /auth/profile & Profile Settings Modal)**:
   - Xây dựng DTO `UpdateProfileDto` tại `backend/src/auth/dto/update-profile.dto.ts` (`name?: string` với giới hạn độ dài 1-100 ký tự).
   - Triển khai phương thức `updateProfile` trong `AuthService` và endpoint `@Patch(['profile', 'me'])` trong `AuthController` bảo vệ bởi `AccessTokenGuard`.
